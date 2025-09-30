@@ -284,23 +284,26 @@ class UserController extends BaseController {
      */
     public function store() {
         try {
+            $json = file_get_contents('php://input');
+            $input = json_decode($json, true);
             // Sanitizar los datos de entrada
-            $userData = $this->sanitizeInput($_POST);
+            $userData = $this->sanitizeInput($input);
             
             // Validar campos requeridos
-            $required = ['user_name', 'user_email', 'user_password', 'confirm_password', 'role_id'];
-            $missingFields = [];
-            
-            foreach ($required as $field) {
-                if (empty($userData[$field])) {
-                    $missingFields[] = $field;
-                }
-            }
-            
+            $FormData = [
+                'user_name' => $json['user_name'] ?? '',
+            ];
+            $missingFields = emptyFields($FormData);
             if (!empty($missingFields)) {
-                throw new \Exception('Los siguientes campos son requeridos: ' . implode(', ', $missingFields));
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Algunos campos están vacíos.',
+                    'fields' => $missingFields,
+                    'redirect' => false
+                ]);
+                return;
             }
-            
+            exit;
             // Validar formato de email
             if (!filter_var($userData['user_email'], FILTER_VALIDATE_EMAIL)) {
                 throw new \Exception('El formato del correo electrónico no es válido');

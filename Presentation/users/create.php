@@ -6,6 +6,19 @@
     <title>Crear Nuevo Usuario</title>
 </head>
 <body>
+
+<?php 
+
+include __DIR__ . '/../Template/header_admin.php'; 
+?>
+    <div>
+      <form class="form-data" data-destination="users.store" calling-method="store" data-type="json">
+        <input type="text" name="user_name" id="user_name">
+        <button type="submit">Guardar</button>   
+      </form> 
+    </div>
+<?php include __DIR__ . '/../Template/footer_admin.php'; ?>
+
     <main>
         <h1>Crear Nuevo Usuario</h1>
         
@@ -113,7 +126,7 @@
             messageDiv.classList.add('hidden');
             
             try {
-                const response = await fetch('/supabase/users/store', {
+                const response = await fetch('/trainscoreflow/users/store', {
                     method: 'POST',
                     body: formData.toString(),
                     headers: {
@@ -128,7 +141,7 @@
                     showMessage('Usuario creado exitosamente', 'success');
                     // Redirigir después de 1.5 segundos
                     setTimeout(() => {
-                        window.location.href = '/supabase/users';
+                        window.location.href = '/trainscoreflow/users';
                     }, 1500);
                 } else {
                     throw new Error(result.message || 'Error al crear el usuario');

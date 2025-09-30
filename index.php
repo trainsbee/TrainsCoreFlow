@@ -1,7 +1,7 @@
 <?php
 // Cargar configuración
 require_once __DIR__ . '/Config/Config.php';
-
+require_once __DIR__ . '/Helpers/Helpers.php';
 // Cargar el autoloader
 require_once __DIR__ . '/autoload.php';
 
