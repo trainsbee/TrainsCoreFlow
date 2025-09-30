@@ -6,13 +6,15 @@
     <title>Editar Usuario</title>
 </head>
 <body>
+<?php include __DIR__ . '/../Template/header_admin.php'; ?>
+<?php include __DIR__ . '/../Template/admin_nav.php'; ?> 
     <main>
         <h1>Editar Usuario</h1>
-        <a href="/supabase/users">Volver a la lista</a>
+        <a href="/trainscoreflow/users">Volver a la lista</a>
         
         <div id="form-message"></div>
         
-        <form id="userForm">
+        <form class="form-data" data-destination="users.update" calling-method="update" data-type="json">
             <input type="hidden" id="user_id" name="user_id" value="<?= htmlspecialchars($user['user_id'] ?? '') ?>">
             
             <div>
@@ -94,74 +96,7 @@
             </div>
         </form>
     </main>
+    <?php include __DIR__ . '/../Template/footer_admin.php'; ?>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('userForm');
-            const submitButton = form.querySelector('button[type="submit"]');
-            const buttonText = submitButton.querySelector('.button-text');
-            const spinner = submitButton.querySelector('.spinner');
-            const messageDiv = document.getElementById('form-message');
-            
-            form.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                // Recolectar datos del formulario
-                const formData = {
-                    user_id: document.getElementById('user_id').value,
-                    user_name: document.getElementById('user_name').value,
-                    user_email: document.getElementById('user_email').value,
-                    user_status: document.getElementById('user_status').value,
-                    role_id: document.getElementById('role_id').value
-                };
-                
-                // Mostrar estado de carga
-                submitButton.disabled = true;
-                buttonText.style.display = 'none';
-                spinner.style.display = 'inline';
-                messageDiv.textContent = '';
-                
-                try {
-                    const response = await fetch(`/supabase/users/${formData.user_id}/update`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify(formData)
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (response.ok) {
-                        showMessage('Usuario actualizado exitosamente', 'success');
-                        // Redirigir después de 1.5 segundos
-                        setTimeout(() => {
-                            window.location.href = '/supabase/users';
-                        }, 1500);
-                    } else {
-                        throw new Error(result.message || 'Error al actualizar el usuario');
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    showMessage(error.message || 'Error al procesar la solicitud', 'error');
-                } finally {
-                    // Restaurar botón
-                    submitButton.disabled = false;
-                    buttonText.style.display = 'inline';
-                    spinner.style.display = 'none';
-                }
-            });
-            
-            function showMessage(message, type = 'info') {
-                messageDiv.textContent = message;
-                messageDiv.className = 'message ' + type;
-                
-                // Desplazarse al mensaje
-                messageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        });
-    </script>
 </body>
 </html>

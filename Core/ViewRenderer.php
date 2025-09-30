@@ -7,18 +7,15 @@ namespace Core;
  */
 class ViewRenderer {
     private $viewsPath;
-    private $layoutPath;
     private $data = [];
     
     /**
      * Constructor
      * 
      * @param string $viewsPath Ruta base de las vistas
-     * @param string $layoutPath Ruta del layout principal (opcional)
      */
-    public function __construct($viewsPath = null, $layoutPath = null) {
+    public function __construct($viewsPath = null) {
         $this->viewsPath = $viewsPath ?: __DIR__ . '/../Presentation';
-        $this->layoutPath = $layoutPath ?: $this->viewsPath . '/layout.php';
     }
     
     /**
@@ -26,10 +23,9 @@ class ViewRenderer {
      * 
      * @param string $view Nombre de la vista (sin extensión)
      * @param array $data Datos para pasar a la vista
-     * @param bool $useLayout Si se debe usar el layout principal
      * @return string HTML renderizado
      */
-    public function render($view, $data = [], $useLayout = true) {
+    public function render($view, $data = []) {
         // Extraer datos para que estén disponibles como variables en la vista
         $this->data = $data;
         extract($data);
@@ -37,46 +33,26 @@ class ViewRenderer {
         // Iniciar buffer de salida
         ob_start();
         
-        if ($useLayout && file_exists($this->layoutPath)) {
-            // Renderizar con layout
-            $content = $this->renderPartial($view, $data, false);
-            include $this->layoutPath;
-        } else {
-            // Renderizar vista directamente
-            $viewFile = $this->getViewFile($view);
-            if (file_exists($viewFile)) {
-                include $viewFile;
-            } else {
-                throw new \Exception("Vista no encontrada: {$viewFile}");
-            }
-        }
-        
-        // Obtener contenido del buffer y limpiar
-        $content = ob_get_clean();
-        return $content;
-    }
-    
-    /**
-     * Renderiza una vista parcial (sin layout)
-     * 
-     * @param string $view Nombre de la vista
-     * @param array $data Datos para pasar a la vista
-     * @param bool $return Si se debe retornar o imprimir
-     * @return string|null HTML renderizado
-     */
-    public function renderPartial($view, $data = [], $return = true) {
-        extract($data);
-        
-        ob_start();
         $viewFile = $this->getViewFile($view);
-        
         if (file_exists($viewFile)) {
             include $viewFile;
         } else {
-            throw new \Exception("Vista parcial no encontrada: {$viewFile}");
+            throw new \Exception("Vista no encontrada: {$viewFile}");
         }
         
-        $content = ob_get_clean();
+        return ob_get_clean();
+    }
+    
+    /**
+     * Renderiza una vista parcial
+     * 
+     * @param string $view Nombre de la vista
+     * @param array $data Datos para pasar a la vista
+     * @param bool $return Si se debe retornar el contenido en lugar de imprimirlo
+     * @return string|void
+     */
+    public function renderPartial($view, $data = [], $return = true) {
+        $content = $this->render($view, $data);
         
         if ($return) {
             return $content;
@@ -91,11 +67,9 @@ class ViewRenderer {
      * 
      * @param string $view Nombre de la vista
      * @param array $data Datos para pasar a la vista
-     * @param bool $useLayout Si se debe usar el layout principal
      */
-    public function renderAndSend($view, $data = [], $useLayout = true) {
-        $content = $this->render($view, $data, $useLayout);
-        echo $content;
+    public function renderAndSend($view, $data = []) {
+        echo $this->render($view, $data);
     }
     
     /**

@@ -7,10 +7,10 @@ export const routes = {
     users: {
         // CRUD básico
         getAll: () => `${API_BASE}users/store`,
-        getOne: (id) => `${API_BASE}users/store/${id}`,
+        getOne: () => `${API_BASE}users/store`,
         store: () => `${API_BASE}users/store`,
-        update: (id) => `${API_BASE}users/store/${id}`,
-        delete: (id) => `${API_BASE}users/store/${id}`,
+        update: () => `${API_BASE}users/update`,
+        delete: () => `${API_BASE}users/delete`,
         
         // Autenticación
         login: () => `${API_BASE}/auth.php?action=login`,
@@ -23,10 +23,10 @@ export const routes = {
     // Productos
     products: {
         getAll: () => `${API_BASE}/products`,
-        getOne: (id) => `${API_BASE}/products/${id}`,
+        getOne: () => `${API_BASE}/products`,
         create: () => `${API_BASE}/products`,
-        update: (id) => `${API_BASE}/products/${id}`,
-        delete: (id) => `${API_BASE}/products/${id}`
+        update: () => `${API_BASE}/products`,
+        delete: () => `${API_BASE}/products`
     },
     
     // Otras rutas pueden ir aquí

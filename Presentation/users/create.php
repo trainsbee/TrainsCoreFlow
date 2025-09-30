@@ -10,15 +10,16 @@
 <?php 
 
 include __DIR__ . '/../Template/header_admin.php'; 
+include __DIR__ . '/../Template/admin_nav.php'; 
 ?>
-    <div>
+    <!-- <div>
       <form class="form-data" data-destination="users.store" calling-method="store" data-type="json">
         <input type="text" name="user_name" id="user_name">
         <button type="submit">Guardar</button>   
       </form> 
-    </div>
-<?php include __DIR__ . '/../Template/footer_admin.php'; ?>
+    </div> -->
 
+    
     <main>
         <h1>Crear Nuevo Usuario</h1>
         
@@ -26,20 +27,20 @@ include __DIR__ . '/../Template/header_admin.php';
             <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
 
-        <form id="userForm" method="post" enctype="application/x-www-form-urlencoded">
+        <form class="form-data" data-destination="users.store" calling-method="store" data-type="json">
             <div id="form-message" class="alert"></div>
             
             <div class="grid">
                 <div>
                     <label for="user_name">
                         Nombre Completo
-                        <input type="text" id="user_name" name="user_name" required>
+                        <input type="text" id="user_name" name="user_name">
                     </label>
                 </div>
                 <div>
                     <label for="user_email">
                         Correo Electrónico
-                        <input type="email" id="user_email" name="user_email" required>
+                        <input type="email" id="user_email" name="user_email">
                     </label>
                 </div>
             </div>
@@ -48,13 +49,13 @@ include __DIR__ . '/../Template/header_admin.php';
                 <div>
                     <label for="user_password">
                         Contraseña
-                        <input type="password" id="user_password" name="user_password" required>
+                        <input type="password" id="user_password" name="user_password">
                     </label>
                 </div>
                 <div>
                     <label for="confirm_password">
                         Confirmar Contraseña
-                        <input type="password" id="confirm_password" name="confirm_password" required>
+                        <input type="password" id="confirm_password" name="confirm_password">
                     </label>
                 </div>
             </div>
@@ -62,7 +63,7 @@ include __DIR__ . '/../Template/header_admin.php';
             <div>
                 <label for="role_id">
                     Rol
-                    <select id="role_id" name="role_id" required>
+                    <select id="role_id" name="role_id">
                         <option value="">Seleccione un rol</option>
                         <?php if (!empty($roles)): ?>
                             <?php foreach ($roles as $role): ?>
@@ -90,8 +91,8 @@ include __DIR__ . '/../Template/header_admin.php';
             </div>
         </form>
     </main>
-
-    <script>
+    <?php include __DIR__ . '/../Template/footer_admin.php'; ?>
+    <!-- <script>
         document.getElementById('userForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -130,7 +131,6 @@ include __DIR__ . '/../Template/header_admin.php';
                     method: 'POST',
                     body: formData.toString(),
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
                         'Accept': 'application/json'
                     }
                 });
@@ -166,6 +166,6 @@ include __DIR__ . '/../Template/header_admin.php';
             // Desplazarse al mensaje
             messageDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-    </script>
+    </script> -->
 </body>
 </html>

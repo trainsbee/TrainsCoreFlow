@@ -10,7 +10,7 @@
         <div class="page-header">
             <h1 class="page-title">Lista de Usuarios</h1>
             <div>
-                <a href="/supabase/users/create" role="button" class="primary">
+                <a href="/trainscoreflow/users/create" role="button" class="primary">
                     Nuevo Usuario
                 </a>
             </div>
@@ -33,7 +33,7 @@
         <?php if (empty($usuarios)): ?>
             <div class="alert alert-info">
                 No se encontraron usuarios registrados.
-                <a href="/supabase/users/create">¿Desea crear un nuevo usuario?</a>
+                <a href="/trainscoreflow/users/create">¿Desea crear un nuevo usuario?</a>
             </div>
         <?php else: ?>
             <div class="table-responsive">
@@ -61,7 +61,7 @@
                                 </td>
                                 <td><?= !empty($user->getCreatedAt()) ? date('d/m/Y H:i', strtotime($user->getCreatedAt())) : 'N/A' ?></td>
                                 <td class="actions">
-                                    <a href="/supabase/users/<?= $user->getUserId() ?>/edit" role="button" class="secondary small">Editar</a>
+                                    <a href="/trainscoreflow/users/<?= $user->getUserId() ?>/edit" role="button" class="secondary small">Editar</a>
                                     <button type="button" class="contrast small" style="margin: 0;" onclick="confirmDelete('<?= $user->getUserId() ?>', '<?= htmlspecialchars($user->getUserName()) ?>')">
                                         Eliminar
                                     </button>
@@ -83,13 +83,13 @@
 
         async function deleteUser(userId) {
             try {
-                // Mostrar indicador de carga
+                // Mostrar indicador de carga   
                 const deleteButton = event.target;
                 const originalText = deleteButton.textContent;
                 deleteButton.textContent = 'Eliminando...';
                 deleteButton.disabled = true;
 
-                const response = await fetch(`/supabase/users/${userId}/delete`, {
+                const response = await fetch(`/trainscoreflow/users/${userId}/delete`, {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
@@ -120,7 +120,7 @@
                                     <td colspan="6" style="text-align: center;">
                                         <div class="alert alert-info">
                                             No se encontraron usuarios registrados.
-                                            <a href="/supabase/users/create">¿Desea crear un nuevo usuario?</a>
+                                            <a href="/trainscoreflow/users/create">¿Desea crear un nuevo usuario?</a>
                                         </div>
                                     </td>
                                 </tr>
