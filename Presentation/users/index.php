@@ -59,6 +59,7 @@
     </style>
 </head>
 <body>
+    <button id="openSidebarCreate">Crear Usuario</button>
     <h1>Lista de Usuarios</h1>
     <table id="usersTable">
         <thead>
@@ -74,12 +75,12 @@
             <!-- Usuarios se cargarán aquí con JS -->
         </tbody>
     </table>
-
+    <?php include __DIR__ . '/../Template/footer_admin.php'; ?>
     <!-- Sidebar de edición -->
     <div id="sidebar" class="sidebar">
         <button id="closeSidebar">Cerrar</button>
         <h2>Editar Usuario</h2>
-        <form id="editUserForm" class="form-data" data-method="PUT" data-destination="users.update" calling-method="update" data-type="json">
+        <form id="editUserForm" data-id="" class="form-data" data-method="PUT" data-destination="users.update" calling-method="update" data-type="json">
             <input type="hidden" name="user_id" id="editUserId">
             <label>Nombre</label>
             <input type="text" name="user_name" id="editUserName">
@@ -93,10 +94,100 @@
             <button type="submit">Guardar Cambios</button>
         </form>
     </div>
+    
+    <div id="sidebar-create" class="sidebar">
+        <button id="closeSidebarCreate">Cerrar</button>
+        <h2>Crear Nuevo Usuario</h2>
+
+    <form data-method="POST" class="form-data" data-destination="users.store" calling-method="store" data-type="json">
+            <div id="form-message" class="alert"></div>
+            
+            <div class="grid">
+                <div>
+                    <label for="user_name">
+                        Nombre usuario
+                        <input type="text" id="user_name" name="user_name">
+                    </label>
+                </div>
+                <div>
+                    <label for="user_email">
+                        Correo electrónico
+                        <input type="email" id="user_email" name="user_email">
+                    </label>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div>
+                    <label for="user_password">
+                        Contraseña  
+                        <input type="password" id="user_password" name="user_password">
+                    </label>
+                </div>
+                <div>
+                    <label for="confirm_password">
+                        Confirmar contraseña    
+                        <input type="password" id="confirm_password" name="confirm_password">
+                    </label>
+                </div>
+            </div>
+
+            <div>
+                <label for="role_id">
+                    Rol
+                    <select id="role_id" name="role_id">
+                        <option value="">Seleccione un rol</option>
+                       
+                    </select>
+                </label>
+            </div>
+
+            <div class="form-actions">
+                <a href="/supabase/users" role="button" class="secondary" type="button">Cancelar</a>
+                <button type="submit" class="primary">
+                    <span class="button-text">Guardar Usuario</span>
+                </button>
+            </div>
+        </form>
+    </div>
+  
+
 
     <script type="module">
-        import { CustomFetch } from './Assets/js/helpers/customFetch.js';
-        import { routes } from './Assets/js/helpers/routes.js';
+       import { CustomFetch } from './Assets/js/helpers/customFetch.js';
+       import { routes } from './Assets/js/helpers/routes.js';
+
+
+      const sidebarCreate = document.getElementById('sidebar-create');
+        const closeSidebarCreateBtn = document.getElementById('closeSidebarCreate');
+        const openSidebarCreateBtn = document.getElementById('openSidebarCreate');
+        
+        // Cerrar sidebar de creación
+        closeSidebarCreateBtn.addEventListener('click', () => sidebarCreate.classList.remove('show'));
+
+        // Abrir sidebar de creación
+        openSidebarCreateBtn.addEventListener('click', () => sidebarCreate.classList.add('show'));
+
+        // OBTENER LA LISTA D EROLES PARA EL SELECT UAR FETCH
+
+      async function getRoles() {
+        const customFetch = new CustomFetch();
+        const { data } = await customFetch.get(routes.users.getAllRoles());
+        const select = document.getElementById('role_id');
+        data.forEach(role => {
+            const option = document.createElement('option');
+            option.value = role.role_id;
+            option.textContent = role.role_name;
+            select.appendChild(option);
+        });
+      }
+
+      getRoles();
+
+
+
+
+
 
         const customFetch = new CustomFetch();
         const sidebar = document.getElementById('sidebar');
@@ -113,6 +204,8 @@
             document.getElementById('editUserName').value = user.user_name;
             document.getElementById('editUserEmail').value = user.user_email;
             document.getElementById('editUserStatus').value = user.user_status ? '1' : '0';
+            // Actualizar el atributo data-id del formulario
+            editForm.setAttribute('data-id', user.user_id);
         }
 
         // Renderizar tabla de usuarios
@@ -140,7 +233,7 @@
                 // Eliminar
                 tr.querySelector('.delete-btn').addEventListener('click', async () => {
                     if (!confirm(`Eliminar usuario ${user.user_name}?`)) return;
-                    const res = await customFetch.post(routes.users.delete(user.user_id));
+                    const res = await customFetch.delete(routes.users.delete(user.user_id));
                     if (res.success) getUsers();
                 });
             });
@@ -155,30 +248,6 @@
                 console.error('Error al obtener usuarios:', error);
             }
         }
-
-        // Manejar submit del formulario de edición
-        editForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const userId = document.getElementById('editUserId').value;
-            const userName = document.getElementById('editUserName').value;
-            const userEmail = document.getElementById('editUserEmail').value;
-            const userStatus = document.getElementById('editUserStatus').value === '1';
-
-            const payload = { user_id: userId, user_name: userName, user_email: userEmail, user_status: userStatus };
-
-            try {
-                const res = await customFetch.put(routes.users.update(userId), {
-                    body: payload,
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                if (res.success) {
-                    sidebar.classList.remove('show');
-                    getUsers(); // refrescar tabla
-                }
-            } catch (error) {
-                console.error('Error al actualizar usuario:', error);
-            }
-        });
 
         // Ejecutar al cargar la página
         getUsers();

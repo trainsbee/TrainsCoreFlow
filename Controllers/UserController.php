@@ -109,6 +109,10 @@ class UserController extends BaseController {
 
             $FormData = [
                 "user_name" => $userData["user_name"] ?? "",
+                "user_email" => $userData["user_email"] ?? "",
+                "user_password" => $userData["user_password"] ?? "",
+                "confirm_password" => $userData["confirm_password"] ?? "",
+                "role_id" => $userData["role_id"] ?? "",
             ];
             $missingFields = emptyFields($FormData);
             if (!empty($missingFields)) {
@@ -120,13 +124,13 @@ class UserController extends BaseController {
             }
 
             
-            $email = $userData['user_email'] ?? '';
-            if (!preg_match('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}$/', $email)) {
+           
+
+            if (!validateEmail($userData["user_email"])) {
                 throw new Exception('El formato del correo electrónico no es válido');
             }
 
-
-            if ($userData["user_password"] !== $userData["confirm_password"]) {
+            if (!validatePasswords($userData["user_password"], $userData["confirm_password"])) {
                 throw new Exception("Las contraseñas no coinciden");
             }
 

@@ -14,7 +14,9 @@ class FormHandler {
         e.preventDefault();
         try {
             // Obtener data-id o user_id dinámicamente al enviar el formulario
-            const id = this.formElement.getAttribute('data-id') || this.formElement.querySelector('input[name="user_id"]').value;
+            const id = this.formElement.getAttribute('data-id') 
+            || this.formElement.querySelector('input[name="user_id"]')?.value 
+            || null;
             const [module, action] = this.endPoint.split('.');
             if (!routes[module] || !routes[module][action]) {
                 console.error(`Ruta no encontrada: ${this.endPoint}`);
