@@ -1,49 +1,61 @@
-import {CustomFetch} from "./customFetch.js";
+// Assets/js/helpers/formHandler.js
+import { CustomFetch } from "./customFetch.js";
 import { routes } from './routes.js';
-//import handlers from './handlers.js';
-// Función para cargar handlers dinámicamente según el módulo
-// Función para cargar handlers dinámicamente según el módulo
 
 class FormHandler {
-    constructor(formElement, url, customFetch, type = 'form') {
-        this.formElement = formElement; // almacena el elemento del formulario HTML
-        this.url = url; // almacena la URL donde se enviará el formulario
-        this.customFetch = customFetch; // almacena la instancia de CustomFetch para realizar solicitudes HTTP
-        this.type = type; // tipo de datos: 'form' para FormData, 'json' para JSON
+    constructor(formElement, endPoint, customFetch, type = 'form') {
+        this.formElement = formElement;
+        this.endPoint = endPoint; // Guardar endPoint en lugar de url precalculada
+        this.customFetch = customFetch;
+        this.type = type; // 'form' o 'json'
     }
 
     async handleSubmit(e) {
-        e.preventDefault(); // evita el comportamiento por defecto del formulario (recargar la página)
+        e.preventDefault();
         try {
-            // determina cómo enviar los datos según el tipo especificado
+            // Obtener data-id o user_id dinámicamente al enviar el formulario
+            const id = this.formElement.getAttribute('data-id') || this.formElement.querySelector('input[name="user_id"]').value;
+            const [module, action] = this.endPoint.split('.');
+            if (!routes[module] || !routes[module][action]) {
+                console.error(`Ruta no encontrada: ${this.endPoint}`);
+                return;
+            }
+            const url = id ? routes[module][action](id) : routes[module][action]();
+            console.log('URL generada para submit:', url); // Debug
+
             if (this.type === 'json') {
-                await this.submitJsonData(e);
+                await this.submitJsonData(url);
             } else {
-                await this.submitFormData(e);
+                await this.submitFormData(url);
             }
         } catch (error) {
-            console.error("Ha ocurrido un error al enviar el formulario:", error.message);
+            console.error("Error al enviar formulario:", error.message);
         }
     }
+
     async loadHandler(handlerName) {
         try {
-            // Extraer solo el nombre del módulo (antes del punto)
             const moduleName = handlerName.split('.')[0];
             const module = await import(`../handlers/${moduleName}.js`);
             return module;
         } catch (error) {
-            console.error(`Error loading handler for ${handlerName}:`, error.message);
+            console.error(`Error cargando handler para ${handlerName}:`, error.message);
             throw error;
         }
     }
 
-
-
-    async submitFormData(e) {
-        e.preventDefault();
-
+    async submitFormData(url) {
         const formData = new FormData(this.formElement);
+        await this.sendRequest(url, formData);
+    }
 
+    async submitJsonData(url) {
+        const formData = new FormData(this.formElement);
+        const data = Object.fromEntries(formData);
+        await this.sendRequest(url, data);
+    }
+
+    async sendRequest(url, data) {
         const csrfMetaTag = document.querySelector('meta[name="X-CSRF-TOKEN"]');
         const csrfToken = csrfMetaTag ? csrfMetaTag.getAttribute('content') : null;
 
@@ -52,116 +64,56 @@ class FormHandler {
             'Custom-Header': 'CustomValue'
         };
 
-        if (csrfToken) {
-            headers['X-CSRF-TOKEN'] = csrfToken;
+        let body = data;
+
+        if (this.type === 'json') {
+            headers['Content-Type'] = 'application/json';
+            body = data; // CustomFetch ya se encarga de stringificar si es JSON
         }
+
+        if (csrfToken) headers['X-CSRF-TOKEN'] = csrfToken;
+
+        const method = (this.formElement.getAttribute('data-method') || 'POST').toUpperCase();
+        console.log('Método:', method, 'URL:', url, 'Datos:', data); // Debug
 
         try {
-            const response = await this.customFetch.post(this.url, {
-                body: formData,
-                contentType: 'application/json',
-                headers: headers
-            });
-
-            const manageData = e.target.getAttribute("data-destination");  // Obtiene el nombre del módulo (ej: 'attendances')
-            const methodData = e.target.getAttribute("calling-method");   // Obtiene el nombre del método (ej: 'setAttendance')
-
-            const handlerModule = await this.loadHandler(manageData);     // Cargar el módulo correspondiente
-
-            if (handlerModule) {
-                if (methodData && typeof handlerModule[methodData] === 'function') {
-                    //console.log(`Calling method: ${methodData} from module: ${manageData}`);
-                    await handlerModule[methodData](response); // Ejecutar la función del módulo
-                } else {
-                    console.warn(`No handler function found for method: ${methodData} in ${manageData}`);
-                }
-            } else {
-                console.warn(`No handler found for destination: ${manageData}`);
+            let response;
+            switch (method) {
+                case 'POST':
+                    response = await this.customFetch.post(url, { body, headers });
+                    break;
+                case 'PUT':
+                    response = await this.customFetch.put(url, { body, headers });
+                    break;
+                default:
+                    throw new Error(`Método HTTP no soportado: ${method}`);
             }
 
+            const manageData = this.formElement.getAttribute("data-destination");
+            const methodData = this.formElement.getAttribute("calling-method");
 
-        } catch (error) {
-            console.error("Error submitting form data:", error.message);
-        }
-
-
-    }
-
-    async submitJsonData(e) {
-        e.preventDefault(); // Evita el comportamiento por defecto del formulario
-
-        const formData = new FormData(this.formElement);
-        const data = Object.fromEntries(formData);
-
-        const csrfMetaTag = document.querySelector('meta[name="X-CSRF-TOKEN"]');
-        const csrfToken = csrfMetaTag ? csrfMetaTag.getAttribute('content') : null;
-
-        const headers = {
-            'Authorization': 'Bearer <token>',
-            'Custom-Header': 'CustomValue',
-            'Content-Type': 'application/json'
-        };
-
-        if (csrfToken) {
-            headers['X-CSRF-TOKEN'] = csrfToken;
-        }
-        try {
-            const response = await this.customFetch.post(this.url, {
-                body: data,
-                contentType: 'application/json',
-                headers: headers
-            });
-
-            const manageData = e.target.getAttribute("data-destination");  // Obtiene el nombre del módulo (ej: 'attendances')
-            const methodData = e.target.getAttribute("calling-method");   // Obtiene el nombre del método (ej: 'setAttendance')
-
-            const handlerModule = await this.loadHandler(manageData);     // Cargar el módulo correspondiente
-
-            if (handlerModule) {
-                if (methodData && typeof handlerModule[methodData] === 'function') {
-                    //console.log(`Calling method: ${methodData} from module: ${manageData}`);
-                    await handlerModule[methodData](response); // Ejecutar la función del módulo
-                } else {
-                    console.warn(`No handler function found for method: ${methodData} in ${manageData}`);
-                }
-            } else {
-                console.warn(`No handler found for destination: ${manageData}`);
+            const handlerModule = await this.loadHandler(manageData);
+            if (handlerModule && methodData && typeof handlerModule[methodData] === 'function') {
+                await handlerModule[methodData](response);
             }
-
         } catch (error) {
-            console.error("Error submitting form data:", error.message);
+            console.error("Error enviando solicitud:", error.message);
         }
     }
 }
 
-
+// Inicialización
 const forms = document.querySelectorAll(".form-data");
-
 const customFetch = new CustomFetch();
+
 forms.forEach((form) => {
-
-    // Obtiene la URL a la que se enviará el formulario a partir del atributo "data-url" del elemento del formulario
     const endPoint = form.getAttribute("data-destination");
-    const method = form.getAttribute("calling-method");
-    const type = form.getAttribute("data-type") || 'form'; // Obtiene el tipo de datos, por defecto 'form'
+    const type = form.getAttribute("data-type") || 'form';
 
-    if (endPoint) {
-        // Obtiene la URL usando el nuevo sistema de rutas
-        let url = '';
-        // Asume que endPoint está en formato 'modulo.accion' (ej: 'users.getAll')
-        const [module, action] = endPoint.split('.');
-        if (routes[module] && routes[module][action]) {
-            // Si es una función que necesita un ID (como getOne, update, delete)
-            const id = form.getAttribute('data-id');
-            url = id ? routes[module][action](id) : routes[module][action]();
-        } else {
-            console.error(`Ruta no encontrada: ${endPoint}`);
-            return;
-        }
-        
-        // Crea una nueva instancia de FormHandler y pasa el formulario, la URL y la instancia de CustomFetch
-        const formHandler = new FormHandler(form, url, customFetch, type);
-        // Añade un controlador de eventos al evento "submit" del formulario que llama al método handleSubmit de FormHandler
-        form.addEventListener("submit", (e) => formHandler.handleSubmit(e));
-    }
+    if (!endPoint) return;
+
+    const formHandler = new FormHandler(form, endPoint, customFetch, type);
+    form.addEventListener("submit", (e) => formHandler.handleSubmit(e));
 });
+
+export default FormHandler;

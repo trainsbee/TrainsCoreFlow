@@ -6,33 +6,34 @@ export const routes = {
     // Usuarios
     users: {
         // CRUD básico
-        getAll: () => `${API_BASE}users/store`,
-        getOne: () => `${API_BASE}users/store`,
-        store: () => `${API_BASE}users/store`,
-        update: () => `${API_BASE}users/update`,
-        delete: () => `${API_BASE}users/delete`,
+        getAll: () => `${API_BASE}users/getAll`,                          // GET /users
+        getAllRoles: () => `${API_BASE}users/getAllRoles`,                          // GET /users/getAllRoles
+        getOne: (id) => `${API_BASE}users/${id}`,                  // GET /users/{id} (si implementas show)
+        store: () => `${API_BASE}users/store`,                     // POST /users/store
+        update: (id) => `${API_BASE}users/${id}/update`,           // POST /users/{id}/update
+        delete: (id) => `${API_BASE}users/${id}/delete`,           // POST /users/{id}/delete
         
         // Autenticación
-        login: () => `${API_BASE}/auth.php?action=login`,
-        profile: () => `${API_BASE}/auth.php?action=profile`,
+        login: () => `${API_BASE}auth.php?action=login`,
+        profile: () => `${API_BASE}auth.php?action=profile`,
         
         // Métodos personalizados
-        search: (query) => `${API_BASE}/users?search=${encodeURIComponent(query)}`
+        search: (query) => `${API_BASE}users?search=${encodeURIComponent(query)}`
     },
     
     // Productos
     products: {
-        getAll: () => `${API_BASE}/products`,
-        getOne: () => `${API_BASE}/products`,
-        create: () => `${API_BASE}/products`,
-        update: () => `${API_BASE}/products`,
-        delete: () => `${API_BASE}/products`
+        getAll: () => `${API_BASE}products`,
+        getOne: (id) => `${API_BASE}products/${id}`,
+        create: () => `${API_BASE}products`,
+        update: (id) => `${API_BASE}products/${id}`,
+        delete: (id) => `${API_BASE}products/${id}`
     },
     
-    // Otras rutas pueden ir aquí
+    // Otras rutas
     auth: {
-        login: () => `${API_BASE}/auth/login`,
-        register: () => `${API_BASE}/auth/register`
+        login: () => `${API_BASE}auth/login`,
+        register: () => `${API_BASE}auth/register`
     }
 };
 

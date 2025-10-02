@@ -4,182 +4,184 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de Usuarios</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background: #f4f4f4;
+        }
+        button {
+            padding: 5px 10px;
+            margin: 2px;
+            cursor: pointer;
+        }
+        .sidebar {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 400px;
+            height: 100%;
+            background: #fff;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.2);
+            padding: 20px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        .sidebar.show {
+            transform: translateX(0);
+        }
+        .sidebar h2 {
+            margin-top: 0;
+        }
+        .sidebar label {
+            display: block;
+            margin-top: 10px;
+        }
+        .sidebar input, .sidebar select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+        }
+    </style>
 </head>
 <body>
-    <main class="container">
-        <div class="page-header">
-            <h1 class="page-title">Lista de Usuarios</h1>
-            <div>
-                <a href="/trainscoreflow/users/create" role="button" class="primary">
-                    Nuevo Usuario
-                </a>
-            </div>
-        </div>
+    <h1>Lista de Usuarios</h1>
+    <table id="usersTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Usuarios se cargarán aquí con JS -->
+        </tbody>
+    </table>
 
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success">
-                <?= htmlspecialchars($_SESSION['success']) ?>
-                <?php unset($_SESSION['success']); ?>
-            </div>
-        <?php endif; ?>
+    <!-- Sidebar de edición -->
+    <div id="sidebar" class="sidebar">
+        <button id="closeSidebar">Cerrar</button>
+        <h2>Editar Usuario</h2>
+        <form id="editUserForm" class="form-data" data-method="PUT" data-destination="users.update" calling-method="update" data-type="json">
+            <input type="hidden" name="user_id" id="editUserId">
+            <label>Nombre</label>
+            <input type="text" name="user_name" id="editUserName">
+            <label>Email</label>
+            <input type="email" name="user_email" id="editUserEmail">
+            <label>Estado</label>
+            <select name="user_status" id="editUserStatus">
+                <option value="1">Activo</option>
+                <option value="0">Inactivo</option>
+            </select>
+            <button type="submit">Guardar Cambios</button>
+        </form>
+    </div>
 
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-error">
-                <?= htmlspecialchars($_SESSION['error']) ?>
-                <?php unset($_SESSION['error']); ?>
-            </div>
-        <?php endif; ?>
+    <script type="module">
+        import { CustomFetch } from './Assets/js/helpers/customFetch.js';
+        import { routes } from './Assets/js/helpers/routes.js';
 
-        <?php if (empty($usuarios)): ?>
-            <div class="alert alert-info">
-                No se encontraron usuarios registrados.
-                <a href="/trainscoreflow/users/create">¿Desea crear un nuevo usuario?</a>
-            </div>
-        <?php else: ?>
-            <div class="table-responsive">
-                <table role="grid">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Email</th>
-                            <th>Estado</th>
-                            <th>Fecha de Registro</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach($usuarios as $user): ?>
-                            <tr>
-                                <td><code><?= htmlspecialchars(substr($user->getUserId() ?? '', 0, 8)) ?>...</code></td>
-                                <td><?= htmlspecialchars($user->getUserName() ?? 'N/A') ?></td>
-                                <td><a href="mailto:<?= htmlspecialchars($user->getUserEmail() ?? '') ?>"><?= htmlspecialchars($user->getUserEmail() ?? 'N/A') ?></a></td>
-                                <td>
-                                    <span class="<?= ($user->getUserStatus() ?? false) ? 'status-active' : 'status-inactive' ?>">
-                                        <?= ($user->getUserStatus() ?? false) ? 'Activo' : 'Inactivo' ?>
-                                    </span>
-                                </td>
-                                <td><?= !empty($user->getCreatedAt()) ? date('d/m/Y H:i', strtotime($user->getCreatedAt())) : 'N/A' ?></td>
-                                <td class="actions">
-                                    <a href="/trainscoreflow/users/<?= $user->getUserId() ?>/edit" role="button" class="secondary small">Editar</a>
-                                    <button type="button" class="contrast small" style="margin: 0;" onclick="confirmDelete('<?= $user->getUserId() ?>', '<?= htmlspecialchars($user->getUserName()) ?>')">
-                                        Eliminar
-                                    </button>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php endif; ?>
-    </main>
+        const customFetch = new CustomFetch();
+        const sidebar = document.getElementById('sidebar');
+        const closeSidebarBtn = document.getElementById('closeSidebar');
+        const editForm = document.getElementById('editUserForm');
 
-    <script>
-        function confirmDelete(userId, userName) {
-            if (confirm(`¿Está seguro de eliminar al usuario "${userName}"? Esta acción no se puede deshacer.`)) {
-                deleteUser(userId);
+        // Cerrar sidebar
+        closeSidebarBtn.addEventListener('click', () => sidebar.classList.remove('show'));
+
+        // Abrir sidebar y rellenar form con datos del usuario
+        function openSidebar(user) {
+            sidebar.classList.add('show');
+            document.getElementById('editUserId').value = user.user_id;
+            document.getElementById('editUserName').value = user.user_name;
+            document.getElementById('editUserEmail').value = user.user_email;
+            document.getElementById('editUserStatus').value = user.user_status ? '1' : '0';
+        }
+
+        // Renderizar tabla de usuarios
+        function renderUsers(users) {
+            const tableBody = document.querySelector("#usersTable tbody");
+            tableBody.innerHTML = '';
+
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${user.user_id.substring(0, 8)}...</td>
+                    <td>${user.user_name}</td>
+                    <td>${user.user_email}</td>
+                    <td>${user.user_status ? 'Activo' : 'Inactivo'}</td>
+                    <td>
+                        <button class="edit-btn">Editar</button>
+                        <button class="delete-btn">Eliminar</button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+
+                // Editar
+                tr.querySelector('.edit-btn').addEventListener('click', () => openSidebar(user));
+
+                // Eliminar
+                tr.querySelector('.delete-btn').addEventListener('click', async () => {
+                    if (!confirm(`Eliminar usuario ${user.user_name}?`)) return;
+                    const res = await customFetch.post(routes.users.delete(user.user_id));
+                    if (res.success) getUsers();
+                });
+            });
+        }
+
+        // Obtener usuarios desde la API
+        async function getUsers() {
+            try {
+                const { data } = await customFetch.get(routes.users.getAll());
+                renderUsers(data || []);
+            } catch (error) {
+                console.error('Error al obtener usuarios:', error);
             }
         }
 
-        async function deleteUser(userId) {
-            try {
-                // Mostrar indicador de carga   
-                const deleteButton = event.target;
-                const originalText = deleteButton.textContent;
-                deleteButton.textContent = 'Eliminando...';
-                deleteButton.disabled = true;
+        // Manejar submit del formulario de edición
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userId = document.getElementById('editUserId').value;
+            const userName = document.getElementById('editUserName').value;
+            const userEmail = document.getElementById('editUserEmail').value;
+            const userStatus = document.getElementById('editUserStatus').value === '1';
 
-                const response = await fetch(`/trainscoreflow/users/${userId}/delete`, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
+            const payload = { user_id: userId, user_name: userName, user_email: userEmail, user_status: userStatus };
+
+            try {
+                const res = await customFetch.put(routes.users.update(userId), {
+                    body: payload,
+                    headers: { 'Content-Type': 'application/json' }
                 });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    // Mostrar mensaje de éxito
-                    showMessage('Usuario eliminado exitosamente', 'success');
-                    
-                    // Eliminar la fila de la tabla
-                    const row = deleteButton.closest('tr');
-                    row.style.transition = 'opacity 0.3s ease';
-                    row.style.opacity = '0';
-                    
-                    // Remover la fila después de la animación
-                    setTimeout(() => {
-                        row.remove();
-                        
-                        // Verificar si quedan usuarios
-                        const tbody = document.querySelector('tbody');
-                        if (tbody.children.length === 0) {
-                            tbody.innerHTML = `
-                                <tr>
-                                    <td colspan="6" style="text-align: center;">
-                                        <div class="alert alert-info">
-                                            No se encontraron usuarios registrados.
-                                            <a href="/trainscoreflow/users/create">¿Desea crear un nuevo usuario?</a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            `;
-                        }
-                    }, 300);
-                } else {
-                    throw new Error(result.message || 'Error al eliminar el usuario');
+                if (res.success) {
+                    sidebar.classList.remove('show');
+                    getUsers(); // refrescar tabla
                 }
             } catch (error) {
-                console.error('Error:', error);
-                showMessage(error.message || 'Error al procesar la solicitud', 'error');
-                
-                // Restaurar el botón
-                if (deleteButton) {
-                    deleteButton.textContent = originalText;
-                    deleteButton.disabled = false;
-                }
+                console.error('Error al actualizar usuario:', error);
             }
-        }
-        
-        function showMessage(message, type = 'info') {
-            // Crear elemento de mensaje si no existe
-            let messageDiv = document.getElementById('message-container');
-            if (!messageDiv) {
-                messageDiv = document.createElement('div');
-                messageDiv.id = 'message-container';
-                messageDiv.style.position = 'fixed';
-                messageDiv.style.top = '20px';
-                messageDiv.style.right = '20px';
-                messageDiv.style.zIndex = '1000';
-                document.body.appendChild(messageDiv);
-            }
-            
-            // Crear el mensaje
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert';
-            alertDiv.classList.add(type === 'error' ? 'alert-error' : 'alert-success');
-            alertDiv.textContent = message;
-            alertDiv.style.marginBottom = '10px';
-            alertDiv.style.padding = '12px 20px';
-            alertDiv.style.borderRadius = '4px';
-            alertDiv.style.maxWidth = '300px';
-            alertDiv.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-            
-            // Agregar a la página
-            messageDiv.appendChild(alertDiv);
-            
-            // Eliminar después de 3 segundos
-            setTimeout(() => {
-                alertDiv.style.transition = 'opacity 0.3s ease';
-                alertDiv.style.opacity = '0';
-                setTimeout(() => {
-                    if (alertDiv.parentNode) {
-                        alertDiv.parentNode.removeChild(alertDiv);
-                    }
-                }, 300);
-            }, 3000);
-        }
+        });
+
+        // Ejecutar al cargar la página
+        getUsers();
     </script>
 </body>
 </html>

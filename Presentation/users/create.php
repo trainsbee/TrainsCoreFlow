@@ -27,19 +27,19 @@ include __DIR__ . '/../Template/admin_nav.php';
             <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
 
-        <form class="form-data" data-destination="users.store" calling-method="store" data-type="json">
+        <form data-method="POST" class="form-data" data-destination="users.store" calling-method="store" data-type="json">
             <div id="form-message" class="alert"></div>
             
             <div class="grid">
                 <div>
                     <label for="user_name">
-                        Nombre Completo
+                        Nombre usuario
                         <input type="text" id="user_name" name="user_name">
                     </label>
                 </div>
                 <div>
                     <label for="user_email">
-                        Correo Electrónico
+                        Correo electrónico
                         <input type="email" id="user_email" name="user_email">
                     </label>
                 </div>
@@ -48,13 +48,13 @@ include __DIR__ . '/../Template/admin_nav.php';
             <div class="grid">
                 <div>
                     <label for="user_password">
-                        Contraseña
+                        Contraseña  
                         <input type="password" id="user_password" name="user_password">
                     </label>
                 </div>
                 <div>
                     <label for="confirm_password">
-                        Confirmar Contraseña
+                        Confirmar contraseña    
                         <input type="password" id="confirm_password" name="confirm_password">
                     </label>
                 </div>

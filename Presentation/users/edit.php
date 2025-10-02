@@ -14,7 +14,7 @@
         
         <div id="form-message"></div>
         
-        <form class="form-data" data-destination="users.update" calling-method="update" data-type="json">
+        <form data-method="PUT" class="form-data" data-destination="users.update" calling-method="update" data-type="json" data-id="<?= htmlspecialchars($user['user_id'] ?? '') ?>">
             <input type="hidden" id="user_id" name="user_id" value="<?= htmlspecialchars($user['user_id'] ?? '') ?>">
             
             <div>

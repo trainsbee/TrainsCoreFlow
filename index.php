@@ -43,11 +43,13 @@ $router->get('', ['home', 'index']);
 
 // User routes
 $router->get('/users', ['user', 'index']);
+$router->get('/users/getAllRoles', ['user', 'getAllRoles']);
+$router->get('/users/getAll', ['user', 'getAll']);
 $router->get('/users/create', ['user', 'create']);
 $router->post('/users/store', ['user', 'store']);
 $router->get('/users/{id}/edit', ['user', 'edit']);
-$router->post('/users/{id}/update', ['user', 'update']);
-$router->post('/users/{id}/delete', ['user', 'delete']);
+$router->put('/users/{id}/update', ['user', 'update']);
+$router->delete('/users/{id}/delete', ['user', 'delete']);
 
 // Get the request URI and method
 $request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);

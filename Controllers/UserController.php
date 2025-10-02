@@ -41,7 +41,8 @@ class UserController extends BaseController {
     /** -------- VISTAS (HTML) -------- */
     public function index() {
         try {
-            $usuarios = $this->service->getAll();
+            $usuarios = $this->service->getAll(); //
+        
             $this->renderView("users/index", [
                 "usuarios" => $usuarios
             ]);
@@ -49,6 +50,21 @@ class UserController extends BaseController {
             $this->renderView("errors/500", [
                 "message" => $e->getMessage()
             ]);
+        }
+    }
+    public function getAll() {
+        try {
+            $usuarios = $this->service->getAll();
+            $usersArray = array_map(fn($user) => $user->toArray(), $usuarios);
+            $this->jsonResponse([
+                "success" => true,
+                "data" => $usersArray
+            ]);
+        } catch (Exception $e) {
+            $this->jsonResponse([
+                "success" => false,
+                "message" => $e->getMessage()
+            ], 400);
         }
     }
 
@@ -62,6 +78,20 @@ class UserController extends BaseController {
             $this->renderView("errors/500", [
                 "message" => $e->getMessage()
             ]);
+        }
+    }
+    public function getAllRoles() {
+        try {
+            $roles = $this->service->getAllRoles();
+            $this->jsonResponse([
+                "success" => true,
+                "data" => $roles
+            ]);
+        } catch (Exception $e) {
+            $this->jsonResponse([
+                "success" => false,
+                "message" => $e->getMessage()
+            ], 400);
         }
     }
 
@@ -118,18 +148,17 @@ class UserController extends BaseController {
         }
     }
 
-    public function update() {
+    public function update($id) {
+        $input = json_decode(file_get_contents("php://input"), true);
+        
         try {
-            $json = file_get_contents("php://input");
-            $input = json_decode($json, true) ?? [];
-
-            if (isset($input["user_id"]) && $input["user_id"] !== $id) {
+            if (isset($input["user_id"]) && (string)$input["user_id"] !== (string)$id) {
                 throw new Exception("El ID del usuario no coincide");
             }
+          
 
-            $input["user_id"] = $id;
-            $updatedUser = $this->service->updateUser($id, $input);
-
+            $input["user_id"] = (string)$id;
+            $updatedUser = $this->service->updateUser((string)$id, $input);
             $this->jsonResponse([
                 "success" => true,
                 "message" => "Usuario actualizado correctamente",

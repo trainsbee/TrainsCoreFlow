@@ -12,7 +12,19 @@ class Router {
     public function post($path, $handler) {
         $this->addRoute('POST', $path, $handler);
     }
-
+    public function put($path, $handler) {
+        $this->addRoute('PUT', $path, $handler);
+    }
+    public function delete($path, $handler) {
+        $this->addRoute('DELETE', $path, $handler);
+    }
+    public function patch($path, $handler) {
+        $this->addRoute('PATCH', $path, $handler);
+    }
+    public function options($path, $handler) {
+        $this->addRoute('OPTIONS', $path, $handler);
+    }
+    
     private function addRoute($method, $path, $handler) {
         $this->routes[] = compact('method', 'path', 'handler');
     }
