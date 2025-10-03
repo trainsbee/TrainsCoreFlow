@@ -16,21 +16,28 @@ class CustomFetch {
             this.options = this._prepareOptions(options);
 
             const response = await fetch(this.endPoint, this.options);
-
+            
             if (!response.ok) {
-                const errorBody = await response.text();
-                throw new Error(response.statusText || 'Error en la solicitud');
+                const errorBody = await response.json().catch(() => ({}));
+                throw {
+                    status: response.status,
+                    statusText: response.statusText,
+                    body: errorBody
+                };
             }
+            
 
             return await response.json();
         } catch (err) {
             return {
                 error: true,
-                status: err.status || "00",
+                status: err.status || 0,
                 statusText: err.statusText || "Ocurrió un error",
+                body: err.body || {},
                 message: err.message || "Ocurrió un error desconocido"
             };
         }
+        
     }
 
     abort(controller) {

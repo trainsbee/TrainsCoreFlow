@@ -100,104 +100,100 @@ class UserController extends BaseController {
         try {
             $json = file_get_contents("php://input");
             $input = json_decode($json, true) ?? [];
-
+    
             if (empty($input)) {
-                throw new Exception("No se recibieron datos válidos");
-            }
-
-            $userData = $this->sanitizeForDb($input);
-
-            $FormData = [
-                "user_name" => $userData["user_name"] ?? "",
-                "user_email" => $userData["user_email"] ?? "",
-                "user_password" => $userData["user_password"] ?? "",
-                "confirm_password" => $userData["confirm_password"] ?? "",
-                "role_id" => $userData["role_id"] ?? "",
-            ];
-            $missingFields = emptyFields($FormData);
-            if (!empty($missingFields)) {
-                $this->jsonResponse([
-                    "success" => false,
-                    "message" => "Algunos campos están vacíos.",
-                    "fields" => $missingFields
+                return $this->jsonResponse([
+                    "status" => "ERROR",
+                    "message" => "No se recibieron datos válidos"
                 ], 400);
             }
-
-            
-           
-
-            if (!validateEmail($userData["user_email"])) {
-                throw new Exception('El formato del correo electrónico no es válido');
-            }
-
-            if (!validatePasswords($userData["user_password"], $userData["confirm_password"])) {
-                throw new Exception("Las contraseñas no coinciden");
-            }
-
-            unset($userData["confirm_password"]);
-
+    
+            $userData = $this->sanitizeForDb($input);
+    
             $user = $this->service->createUser($userData);
-
-            $this->jsonResponse([
-                "success" => true,
+    
+            return $this->jsonResponse([
+                "status" => "USER_CREATED",
                 "message" => "Usuario creado exitosamente",
                 "data" => $user
             ], 201);
-
-        } catch (Exception $e) {
-            $this->jsonResponse([
-                "success" => false,
+    
+        } catch (\Exceptions\ValidationException $e) {
+            return $this->jsonResponse([
+                "status" => "VALIDATION_ERROR",
+                "message" => $e->getMessage(),
+                "fields" => $e->getFields()
+            ], 422);
+    
+        } catch (\Exception $e) {
+            return $this->jsonResponse([
+                "status" => "ERROR",
                 "message" => $e->getMessage()
             ], 400);
         }
     }
-
+    
     public function update($id) {
-        $input = json_decode(file_get_contents("php://input"), true);
-        
+        $input = json_decode(file_get_contents("php://input"), true) ?? [];
+    
         try {
             if (isset($input["user_id"]) && (string)$input["user_id"] !== (string)$id) {
-                throw new Exception("El ID del usuario no coincide");
+                throw new \Exception("El ID del usuario no coincide");
             }
-          
-
+    
             $input["user_id"] = (string)$id;
             $updatedUser = $this->service->updateUser((string)$id, $input);
+    
             $this->jsonResponse([
-                "success" => true,
+                "status" => "USER_UPDATED",
                 "message" => "Usuario actualizado correctamente",
-                "user" => $updatedUser
-            ]);
-
-        } catch (Exception $e) {
+                "data" => $updatedUser
+            ], 200);
+    
+        } catch (\Exceptions\ValidationException $e) {
             $this->jsonResponse([
-                "success" => false,
+                "status" => "VALIDATION_ERROR",
+                "message" => $e->getMessage(),
+                "fields" => $e->getFields()
+            ], 422);
+    
+        } catch (\Exception $e) {
+            $this->jsonResponse([
+                "status" => "ERROR",
                 "message" => $e->getMessage()
             ], 400);
         }
     }
-
+    
     public function delete($id) {
         try {
             if (empty($id)) {
-                throw new Exception("ID de usuario no proporcionado");
+                throw new \Exceptions\ValidationException("ID de usuario no proporcionado", ["user_id"]);
             }
-
+    
             $id = trim($id);
             $this->service->deleteUser($id);
-
+    
             $this->jsonResponse([
-                "success" => true,
+                "status" => "USER_DELETED",
                 "message" => "Usuario eliminado exitosamente"
-            ]);
-
-        } catch (Exception $e) {
+            ], 200);
+    
+        } catch (\Exceptions\ValidationException $e) {
             $this->jsonResponse([
-                "success" => false,
+                "status" => "VALIDATION_ERROR",
+                "message" => $e->getMessage(),
+                "fields" => $e->getFields()
+            ], 422);
+    
+        } catch (\Exception $e) {
+            $this->jsonResponse([
+                "status" => "ERROR",
                 "message" => $e->getMessage()
             ], 400);
         }
     }
+    
     public function edit($id) {
         try {
             // Obtener la lista de roles para el formulario

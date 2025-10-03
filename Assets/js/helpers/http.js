@@ -23,7 +23,6 @@ class FormHandler {
                 return;
             }
             const url = id ? routes[module][action](id) : routes[module][action]();
-            console.log('URL generada para submit:', url); // Debug
 
             if (this.type === 'json') {
                 await this.submitJsonData(url);
@@ -76,7 +75,7 @@ class FormHandler {
         if (csrfToken) headers['X-CSRF-TOKEN'] = csrfToken;
 
         const method = (this.formElement.getAttribute('data-method') || 'POST').toUpperCase();
-        console.log('Método:', method, 'URL:', url, 'Datos:', data); // Debug
+    
 
         try {
             let response;

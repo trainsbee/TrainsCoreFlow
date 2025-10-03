@@ -8,6 +8,7 @@
 <body>
 <?php include __DIR__ . '/../Template/header_admin.php'; ?>
 <?php include __DIR__ . '/../Template/admin_nav.php'; ?> 
+
     <main>
         <h1>Editar Usuario</h1>
         <a href="/trainscoreflow/users">Volver a la lista</a>

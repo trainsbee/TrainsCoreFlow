@@ -3,12 +3,56 @@ import { validateFields } from '../utils/validations.js';
 
 async function processResponse(response, handlerName) {
     try {
+        // response ya es JSON de customFetch
         return await response;
     } catch (error) {
         console.error(`Error processing ${handlerName}:`, error.message);
-        throw error;
+        // Retornar un objeto consistente con error: true
+        return {
+            error: true,
+            status: 0,
+            statusText: "Error de red",
+            body: {},
+            message: error.message
+        };
     }
 }
+
+
+
+export async function store(response) {
+    try {
+        const data = await processResponse(response, 'Users');
+
+        // Manejo de errores HTTP + código de negocio 422
+        if (data.error && data.status === 422) {
+            // aquí ya tienes body con mensaje y fields
+            const body = data.body || data; 
+            console.warn("⚠️ Validación fallida:", body.message, body.fields || []);
+            return;
+        }
+
+        // Otros errores HTTP
+        if (data.error) {
+            console.error("Error HTTP inesperado:", data.status, data.statusText, data.body?.message);
+            return;
+        }
+
+        // Casos exitosos y códigos de negocio
+        switch (data.status) {
+            case 'USER_CREATED':
+                console.log("✅ Usuario creado:", data.data);
+                break;
+            default:
+                console.warn("⚠️ Respuesta inesperada:", data);
+        }
+
+    } catch (error) {
+        console.error("Error procesando store:", error.message);
+    }
+}
+
+
 
 export async function getUser(response) {
     try {
@@ -26,34 +70,11 @@ export async function getUser(response) {
         console.error('Error al procesar la respuesta:', error.message);
     }
 }
-export async function store(response) {
-    const data = await processResponse(response, 'Users');
-    console.log(data)
-    // const validation = validateFields(data?.data, ["name", "email"]);
 
-    // if (!validation.isValid) {
-    //     console.error("❌ Faltan campos:", validation.missingFields);
-    //     // Aquí podrías enviar `validation.missingFields` al front
-    //     return validation;
-    // }
-    switch (data.status) {
-        case 'success':
-            console.log(data.data)
-        
-            break;
 
-        case 'error':
-            
-            break;
-
-        default:
-             
-            break;
-    }
-}
 export async function update(response) {
     const data = await processResponse(response, 'Users');
-    console.log(data)
+ 
     // const validation = validateFields(data?.data, ["name", "email"]);
 
     // if (!validation.isValid) {

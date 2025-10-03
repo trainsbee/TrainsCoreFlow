@@ -184,11 +184,6 @@
 
       getRoles();
 
-
-
-
-
-
         const customFetch = new CustomFetch();
         const sidebar = document.getElementById('sidebar');
         const closeSidebarBtn = document.getElementById('closeSidebar');
