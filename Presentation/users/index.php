@@ -91,6 +91,15 @@
                 <option value="1">Activo</option>
                 <option value="0">Inactivo</option>
             </select>
+            <div>
+                <label for="edit_role_id">
+                    Rol
+                    <select id="edit_role_id" name="edit_role_id">
+                        <option value="">Seleccione un rol</option>
+                       
+                    </select>
+                </label>
+            </div>
             <button type="submit">Guardar Cambios</button>
         </form>
     </div>
@@ -133,9 +142,9 @@
             </div>
 
             <div>
-                <label for="role_id">
+                <label for="create_role_id">
                     Rol
-                    <select id="role_id" name="role_id">
+                    <select id="create_role_id" name="create_role_id">
                         <option value="">Seleccione un rol</option>
                        
                     </select>
@@ -170,17 +179,26 @@
 
         // OBTENER LA LISTA D EROLES PARA EL SELECT UAR FETCH
 
-      async function getRoles() {
-        const customFetch = new CustomFetch();
-        const { data } = await customFetch.get(routes.users.getAllRoles());
-        const select = document.getElementById('role_id');
-        data.forEach(role => {
-            const option = document.createElement('option');
-            option.value = role.role_id;
-            option.textContent = role.role_name;
-            select.appendChild(option);
-        });
-      }
+        async function getRoles() {
+            const customFetch = new CustomFetch();
+            const { data } = await customFetch.get(routes.users.getAllRoles());
+
+            const createSelect = document.getElementById('create_role_id');
+            const editSelect = document.getElementById('edit_role_id');
+
+            data.forEach(role => {
+            const option1 = document.createElement('option');
+            option1.value = role.role_id;
+            option1.textContent = role.role_name;
+            createSelect.appendChild(option1);
+
+            const option2 = document.createElement('option');
+            option2.value = role.role_id;
+            option2.textContent = role.role_name;
+            editSelect.appendChild(option2);
+    });
+}
+
 
       getRoles();
 
@@ -201,6 +219,7 @@
             document.getElementById('editUserStatus').value = user.user_status ? '1' : '0';
             // Actualizar el atributo data-id del formulario
             editForm.setAttribute('data-id', user.user_id);
+            document.getElementById('edit_role_id').value = user.role_id;
         }
 
         // Renderizar tabla de usuarios

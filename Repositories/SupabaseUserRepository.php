@@ -40,6 +40,28 @@ class SupabaseUserRepository implements UserRepositoryInterface
             throw $e;
         }
     }
+    public function getRoleById(string $roleId): ?array {
+        try {
+            $response = $this->client->request(
+                'rest/v1/roles',
+                'GET',
+                null,
+                'role_id=eq.' . $roleId . '&select=role_id,role_name'
+            );
+            
+            if (empty($response['data'])) {
+                return null;
+            }
+            
+            return $response['data'][0];
+            
+        } catch (\Exception $e) {
+            if (defined('APP_DEBUG') && APP_DEBUG) {
+                error_log('Error in SupabaseUserRepository->getRoleById(): ' . $e->getMessage());
+            }
+            return null;
+        }
+    }
     
     public function findById(string $id): ?array
     {

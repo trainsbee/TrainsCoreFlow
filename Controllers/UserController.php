@@ -217,7 +217,7 @@ class UserController extends BaseController {
                 'user_name' => '',
                 'user_email' => '',
                 'user_status' => true,
-                'role_id' => ''
+                'edit_role_id' => ''
             ], $user);
             
             // Asegurarse de que los roles tengan el formato correcto
