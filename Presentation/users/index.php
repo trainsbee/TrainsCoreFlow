@@ -140,7 +140,15 @@
                     </label>
                 </div>
             </div>
-
+            <div>
+                <label for="user_status">
+                    Estado
+                    <select id="user_status" name="user_status">
+                        <option value="1">Activo</option>
+                        <option value="0">Inactivo</option>
+                    </select>
+                </label>
+            </div>
             <div>
                 <label for="create_role_id">
                     Rol

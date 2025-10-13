@@ -31,8 +31,11 @@ class UserService {
     }
 
     public function createUser(array $userData): array {
-        $required = ['user_name', 'user_email', 'user_password', 'confirm_password', 'role_id'];
+        $required = ['user_name', 'user_email', 'user_password', 'confirm_password', 'create_role_id'];
         $roles = $this->getAllRoles();
+
+        
+
         Helpers::required($userData, $required);
         Helpers::email($userData['user_email']);
         Helpers::match($userData['user_password'], $userData['confirm_password'], 'user_password', 'confirm_password');
@@ -40,6 +43,19 @@ class UserService {
         unset($userData['confirm_password']);
         $userData['user_password'] = password_hash($userData['user_password'], PASSWORD_BCRYPT);
         $userData['user_status'] = $userData['user_status'] ?? true;
+
+        $userData['role_id'] = $userData['create_role_id'];
+        unset($userData['create_role_id']);
+        
+        $existingUserName = $this->isUserInUse($userData['user_name']);
+        if ($existingUserName) {
+            throw new ValidationException("El usuario ya existe", ['user_name']);
+        }
+
+        $existingUser = $this->isEmailInUse($userData['user_email']);
+        if ($existingUser) {
+            throw new ValidationException("El usuario ya existe", ['user_email']);
+        }
 
         if (isset($userData['role_id'])) {
             $role = $this->getRoleById($userData['role_id']);
@@ -70,6 +86,15 @@ class UserService {
         $required = ['user_name', 'user_email', 'role_id'];
         Helpers::required($userData, $required);
         Helpers::email($userData['user_email'], ['gmail.com']);
+        $existingUser = $this->isUserInUse($userData['user_name'], $userId);
+        if ($existingUser) {
+            throw new ValidationException("El usuario ya existe", ['user_name']);
+        }
+
+        $existingUser = $this->isEmailInUse($userData['user_email'], $userId);
+        if ($existingUser) {
+            throw new ValidationException("El usuario ya existe", ['user_email']);
+        }
 
         if (isset($userData['role_id'])) {
             $role = $this->getRoleById($userData['role_id']);
@@ -102,7 +127,17 @@ class UserService {
             return [];
         }
     }
-
+    public function isUserInUse(string $userName, ?string $excludeUserId = null): bool {
+        try {
+            return $this->repository->isUserInUse($userName, $excludeUserId);
+        } catch (\Exception $e) {
+            $errorMsg = 'Error al verificar el usuario: ' . $e->getMessage();
+            if (defined('APP_DEBUG') && APP_DEBUG) {
+                error_log('Error en UserService->isUserInUse(): ' . $errorMsg);
+            }
+            throw new \Exception($errorMsg, 0, $e);
+        }
+    }
     public function isEmailInUse(string $email, ?string $excludeUserId = null): bool {
         try {
             return $this->repository->isEmailInUse($email, $excludeUserId);

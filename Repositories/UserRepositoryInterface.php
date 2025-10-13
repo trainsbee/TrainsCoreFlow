@@ -56,6 +56,15 @@ interface UserRepositoryInterface
     public function isEmailInUse(string $email, ?string $excludeUserId = null): bool;
     
     /**
+     * Check if user is already in use
+     * 
+     * @param string $userName
+     * @param string|null $excludeUserId User ID to exclude from check (for updates)
+     * @return bool
+     */
+    public function isUserInUse(string $userName, ?string $excludeUserId = null): bool;
+    
+    /**
      * Get all roles
      * 
      * @return array Array of Role objects

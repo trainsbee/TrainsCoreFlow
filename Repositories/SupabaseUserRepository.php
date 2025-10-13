@@ -99,6 +99,7 @@ class SupabaseUserRepository implements UserRepositoryInterface
     
     public function create(array $data): array
     {
+        print_r($data);
         try {
             $response = $this->client->request(
                 'rest/v1/users',
@@ -208,6 +209,32 @@ class SupabaseUserRepository implements UserRepositoryInterface
         }
     }
     
+    public function isUserInUse(string $userName, ?string $excludeUserId = null): bool
+    {
+        try {
+            $query = 'user_name=eq.' . urlencode($userName) . '&select=user_id';
+            if ($excludeUserId) {
+                $query .= '&user_id=neq.' . urlencode($excludeUserId);
+            }
+            
+            $response = $this->client->request(
+                'rest/v1/users',
+                'GET',
+                null,
+                $query
+            );
+            
+            // Verificar si hay algún usuario con ese ID
+            return !empty($response['data']);
+            
+        } catch (\Exception $e) {
+            if (defined('APP_DEBUG') && APP_DEBUG) {
+                error_log('Error in SupabaseUserRepository->isUserInUse(): ' . $e->getMessage());
+            }
+            return false;
+        }
+    }
+
     /**
      * Obtener todos los roles disponibles
      * 

@@ -1,9 +1,10 @@
 <?php
 namespace Controllers;
-
+include_once __DIR__ . '/../Helpers/Helpers.php';
 use Core\BaseController;
 use Services\UserService;
 use Exception;
+use Helpers\Helpers;
 
 class UserController extends BaseController {
     protected $service;
@@ -108,9 +109,18 @@ class UserController extends BaseController {
                 ], 400);
             }
     
-            $userData = $this->sanitizeForDb($input);
-    
-            $user = $this->service->createUser($userData);
+            
+            $input['user_name']      = Helpers::cleanInjection($input['user_name']);
+            $input['user_email']     = Helpers::cleanInjection($input['user_email']);
+            $input['user_password']  = Helpers::cleanInjection($input['user_password']);
+            $input['confirm_password']= Helpers::cleanInjection($input['confirm_password']);
+            $input['user_status']    = Helpers::cleanInjection($input['user_status']);
+            $input['create_role_id'] = Helpers::cleanInjection($input['create_role_id']);
+            
+            
+            print_r($input);
+           
+            $user = $this->service->createUser($input);
     
             return $this->jsonResponse([
                 "status" => "USER_CREATED",
@@ -135,7 +145,12 @@ class UserController extends BaseController {
     
     public function update($id) {
         $input = json_decode(file_get_contents("php://input"), true) ?? [];
-    
+
+        $input['user_name']      = Helpers::cleanInjection($input['user_name']);
+        $input['user_email']     = Helpers::cleanInjection($input['user_email']);
+        $input['user_status']    = Helpers::cleanInjection($input['user_status']);
+        $input['edit_role_id']   = Helpers::cleanInjection($input['edit_role_id']);
+
         try {
             if (isset($input["user_id"]) && (string)$input["user_id"] !== (string)$id) {
                 throw new \Exception("El ID del usuario no coincide");
