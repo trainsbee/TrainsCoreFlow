@@ -57,6 +57,29 @@ class UserController extends BaseController {
             ], 400);
         }
     }
+public function getByPage(): void
+{
+    
+    try {
+        $page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
+        $perPage = isset($_GET['perPage']) ? (int) $_GET['perPage'] : 10;
+        $result = $this->service->getByPage($page, $perPage);
+
+        $this->jsonResponse([
+            "success" => true,
+            "data" => $result['users'],
+            "pagination" => $result['pagination']
+        ]);
+    } catch (Exception $e) {
+        $this->jsonResponse([
+            "success" => false,
+            "message" => $e->getMessage()
+        ], 400);
+    }
+}
+
+
+    
     public function getUserById($id): void
     {
         try {

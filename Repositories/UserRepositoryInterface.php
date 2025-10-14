@@ -14,6 +14,16 @@ interface UserRepositoryInterface
     public function getAll(): array;
     
     /**
+     * Get users by page
+     * 
+     * @param int $page Page number
+     * @param int $perPage Number of users per page
+     * @return array Array of User objects
+     */
+
+     public function getByPage(int $page = 1, int $perPage = 10): array;
+
+    /**
      * Find a user by ID
      * 
      * @param string $id

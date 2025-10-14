@@ -40,6 +40,53 @@ class SupabaseUserRepository implements UserRepositoryInterface
             throw $e;
         }
     }
+public function getByPage(int $page = 1, int $perPage = 10): array
+{
+    try {
+        $offset = ($page - 1) * $perPage;
+
+        // 1️⃣ Traemos usuarios paginados
+        $queryUsers = "select=*,roles(role_name)&limit={$perPage}&offset={$offset}";
+        $response = $this->client->request('rest/v1/users', 'GET', null, $queryUsers);
+
+        $users = [];
+        if (!empty($response['data']) && is_array($response['data'])) {
+            $users = array_map(fn($userData) => User::fromArray($userData), $response['data']);
+        }
+
+        // 2️⃣ Contamos total de registros correctamente
+        $countResponse = $this->client->request(
+            'rest/v1/users',
+            'GET',
+            null,
+            'select=user_id',
+            ['prefer' => 'count=exact']
+        );
+
+        $totalRecords = !empty($countResponse['data']) ? count($countResponse['data']) : 0;
+        $totalPages = $totalRecords > 0 ? ceil($totalRecords / $perPage) : 1;
+
+        return [
+            'users' => $users,
+            'pagination' => [
+                'currentPage' => $page,
+                'perPage' => $perPage,
+                'totalPages' => $totalPages,
+                'totalRecords' => $totalRecords
+            ]
+        ];
+
+    } catch (\Exception $e) {
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            error_log('Error in SupabaseUserRepository->getByPage(): ' . $e->getMessage());
+        }
+        throw $e;
+    }
+}
+
+
+
+
     public function getRoleById(string $roleId): ?array {
         try {
             $response = $this->client->request(

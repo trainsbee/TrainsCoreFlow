@@ -278,26 +278,58 @@
             });
         }
 
-        // Obtener usuarios desde la API
-        async function getUsers() {
-            try {
-                const { data } = await customFetch.get(routes.users.getAll());
-                console.log(data)
-                renderUsers(data || []);
-            } catch (error) {
-                console.error('Error al obtener usuarios:', error);
-            }
-        }
-
-        // Ejecutar al cargar la página
-        getUsers();
+    
        function removeRow(userId) {
            const row = document.querySelector(`tr[id="${userId}"]`);
            if (row) {
                row.remove();
            }
        }
+
+
+
+let currentPage = 1;
+let totalPages = 1;
+let perPage = 7; // Puedes cambiar esto si quieres
+
+async function getPaginatedUsers(page = 1) {
+    try {
+        const { data, pagination } = await customFetch.get(routes.users.getByPage(page, perPage));
+
+        // Aquí puedes llamar a tu función que renderiza la tabla
+        renderUsers(data);
+
+        currentPage = pagination.currentPage;
+        totalPages = pagination.totalPages;
+
+        document.getElementById('currentPage').textContent = currentPage;
+
+        document.getElementById('prevPage').disabled = currentPage === 1;
+        document.getElementById('nextPage').disabled = currentPage === totalPages;
+
+    } catch (error) {
+        console.error('Error al obtener usuarios paginados:', error);
+    }
+}
+
+document.getElementById('prevPage').addEventListener('click', () => {
+    if (currentPage > 1) getPaginatedUsers(currentPage - 1);
+});
+
+document.getElementById('nextPage').addEventListener('click', () => {
+    if (currentPage < totalPages) getPaginatedUsers(currentPage + 1);
+});
+
+// Cargar la primera página al inicio
+getPaginatedUsers(currentPage);
+
     </script>
+
+    <div class="pagination">
+        <button id="prevPage">Anterior</button>
+        <span id="currentPage">1</span>
+        <button id="nextPage">Siguiente</button>
+    </div>
     <?php include __DIR__ . '/../Template/footer_admin.php'; ?>
 </body>
 </html>

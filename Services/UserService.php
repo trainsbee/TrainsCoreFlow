@@ -29,6 +29,20 @@ class UserService {
             return [];
         }
     }
+public function getByPage(int $page = 1, int $perPage = 10): array
+{
+    $result = $this->repository->getByPage($page, $perPage);
+
+    // Convertimos objetos User a arrays si es necesario
+    $result['users'] = array_map(
+        fn($user) => is_object($user) && method_exists($user, 'toArray') ? $user->toArray() : $user,
+        $result['users']
+    );
+
+    return $result;
+}
+
+
     
 
     public function createUser(array $userData): array {
@@ -86,7 +100,7 @@ class UserService {
         }
         $required = ['user_name', 'user_email', 'role_id'];
         Helpers::required($userData, $required);
-        Helpers::email($userData['user_email'], ['gmail.com']);
+        Helpers::email($userData['user_email'], ['gmail.com', 'example.com']);
 
         $existingUser = $this->isUserInUse($userData['user_name'], $userId);
         if ($existingUser) {
