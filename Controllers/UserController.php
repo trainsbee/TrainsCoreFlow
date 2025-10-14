@@ -63,7 +63,9 @@ public function getByPage(): void
     try {
         $page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
         $perPage = isset($_GET['perPage']) ? (int) $_GET['perPage'] : 10;
-        $result = $this->service->getByPage($page, $perPage);
+        $startDate = isset($_GET['startDate']) ? $_GET['startDate'] : null;
+        $endDate = isset($_GET['endDate']) ? $_GET['endDate'] : null;
+        $result = $this->service->getByPage($page, $perPage, $startDate, $endDate);
 
         $this->jsonResponse([
             "success" => true,

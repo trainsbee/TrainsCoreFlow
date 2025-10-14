@@ -21,7 +21,7 @@ interface UserRepositoryInterface
      * @return array Array of User objects
      */
 
-     public function getByPage(int $page = 1, int $perPage = 10): array;
+    public function getByPage(int $page = 1, int $perPage = 10, ?string $startDate = null, ?string $endDate = null): array;
 
     /**
      * Find a user by ID

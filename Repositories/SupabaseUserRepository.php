@@ -40,7 +40,7 @@ class SupabaseUserRepository implements UserRepositoryInterface
             throw $e;
         }
     }
-public function getByPage(int $page = 1, int $perPage = 10): array
+public function getByPage1(int $page = 1, int $perPage = 10): array
 {
     try {
         $offset = ($page - 1) * $perPage;
@@ -83,7 +83,78 @@ public function getByPage(int $page = 1, int $perPage = 10): array
         throw $e;
     }
 }
+public function getByPage(int $page = 1, int $perPage = 10, $startDate = null, $endDate = null): array
+{
+    try {
+        $offset = ($page - 1) * $perPage;
 
+        // Construir filtros base
+        $queryUsers = "select=*,roles(role_name)&limit={$perPage}&offset={$offset}";
+        
+        // ➕ Cambio: Agregar filtro por rango de fechas si se proporcionan
+        if ($startDate !== null) {
+            $queryUsers .= "&created_at=gte.{$startDate}";
+        }
+        if ($endDate !== null) {
+            // Opcional: Agregar fin del día al endDate para incluir todo el día (ej. 2025-10-14T23:59:59)
+            // $endDate = $endDate . 'T23:59:59'; // Descomenta si necesitas rango inclusivo por día
+            $queryUsers .= "&created_at=lte.{$endDate}";
+        }
+
+        // 1️⃣ Traemos usuarios paginados con filtro
+        $response = $this->client->request('rest/v1/users', 'GET', null, $queryUsers);
+
+        $users = [];
+        if (!empty($response['data']) && is_array($response['data'])) {
+            $users = array_map(fn($userData) => User::fromArray($userData), $response['data']);
+        }
+
+        // ➕ Cambio: Construir query para conteo con el mismo filtro de fechas
+        $countQuery = 'select=user_id';
+        if ($startDate !== null) {
+            $countQuery .= "&created_at=gte.{$startDate}";
+        }
+        if ($endDate !== null) {
+            $countQuery .= "&created_at=lte.{$endDate}";
+        }
+
+        // 2️⃣ Contamos total de registros con filtro
+        $countResponse = $this->client->request(
+            'rest/v1/users',
+            'GET',
+            null,
+            $countQuery,
+            ['prefer' => 'count=exact']
+        );
+
+        // En Supabase con prefer count=exact, el total viene en headers, no en data. ¡Corrección importante!
+        // Asumiendo que tu $this->client maneja headers, ajusta si es necesario.
+        // Ejemplo: $totalRecords = $countResponse['headers']['content-range'][1] ?? 0; // Mejor usa headers
+        // Pero como en tu código usas count(data), lo adapto: si usas count=exact, data está vacío y total en header.
+        // ➕ Recomendación: Cambia a leer header para precisión.
+        $totalRecords = isset($countResponse['headers']['content-range']) 
+            ? (int) explode('/', $countResponse['headers']['content-range'])[1] 
+            : (!empty($countResponse['data']) ? count($countResponse['data']) : 0);
+
+        $totalPages = $totalRecords > 0 ? ceil($totalRecords / $perPage) : 1;
+
+        return [
+            'users' => $users, // Cambiado de 'data' a 'users' para consistencia, pero ajusta si tu frontend espera 'data'
+            'pagination' => [
+                'currentPage' => $page,
+                'perPage' => $perPage,
+                'totalPages' => $totalPages,
+                'totalRecords' => $totalRecords
+            ]
+        ];
+
+    } catch (\Exception $e) {
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            error_log('Error in SupabaseUserRepository->getByPage(): ' . $e->getMessage());
+        }
+        throw $e;
+    }
+}
 
 
 

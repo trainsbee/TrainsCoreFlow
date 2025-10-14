@@ -8,7 +8,7 @@ export const routes = {
         // CRUD básico
         getAll: () => `${API_BASE}users/getAll`,                          // GET /users
         getAllRoles: () => `${API_BASE}users/getAllRoles`,                          // GET /users/getAllRoles
-        getByPage: (page, perPage) => `${API_BASE}users/getByPage?page=${page}&perPage=${perPage}`, // GET /users/getByPage?page=1&perPage=10
+        getByPage: (page, perPage, startDate, endDate) => `${API_BASE}users/getByPage?page=${page}&perPage=${perPage}&startDate=${startDate}&endDate=${endDate}`, // GET /users/getByPage?page=1&perPage=10
         getOne: (id) => `${API_BASE}users/${id}/getUserById`,                  // GET /users/{id} (si implementas show)
         store: () => `${API_BASE}users/store`,                     // POST /users/store
         update: (id) => `${API_BASE}users/${id}/update`,           // POST /users/{id}/update

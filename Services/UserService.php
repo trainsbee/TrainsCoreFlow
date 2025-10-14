@@ -29,9 +29,9 @@ class UserService {
             return [];
         }
     }
-public function getByPage(int $page = 1, int $perPage = 10): array
+public function getByPage(int $page = 1, int $perPage = 10, $startDate = null, $endDate = null): array
 {
-    $result = $this->repository->getByPage($page, $perPage);
+    $result = $this->repository->getByPage($page, $perPage, $startDate, $endDate);
 
     // Convertimos objetos User a arrays si es necesario
     $result['users'] = array_map(

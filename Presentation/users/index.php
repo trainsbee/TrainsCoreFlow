@@ -56,11 +56,55 @@
             margin-top: 5px;
             box-sizing: border-box;
         }
+        /* Estilos faltantes para form creación */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .form-actions {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .alert {
+            color: red;
+            margin-bottom: 10px;
+        }
+        /* Estilos para paginación */
+        .pagination {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 20px;
+        }
+        .pagination button {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .pagination button.active {
+            background: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        #pageNumbers button {
+            min-width: 30px;
+        }
     </style>
 </head>
 <body>
     <button id="openSidebarCreate">Crear Usuario</button>
     <h1>Lista de Usuarios</h1>
+    <div class="filter">
+        <input type="date" id="startDate" value="2025-10-01">
+        <input type="date" id="endDate" value="2025-10-31">
+        <button id="applyFilter">Aplicar Filtros</button>
+    </div>
     <table id="usersTable">
         <thead>
             <tr>
@@ -74,6 +118,19 @@
         <tbody>
             <!-- Usuarios se cargarán aquí con JS -->
         </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="5">
+                    <div class="pagination">
+                        <input type="number" id="perPage" value="4">
+                        <button id="prevPage">Anterior</button>
+                        <div id="pageNumbers"></div> <!-- Botones numéricos se generan aquí -->
+                        <button id="nextPage">Siguiente</button>
+                        <span>Página <span id="currentPage">1</span> de <span id="totalPagesDisplay">1</span></span>
+                    </div>
+                </td>
+            </tr>
+        </tfoot>
     </table>
 
     <!-- Sidebar de edición -->
@@ -96,7 +153,6 @@
                     Rol
                     <select id="edit_role_id" name="edit_role_id">
                         <option value="">Seleccione un rol</option>
-                       
                     </select>
                 </label>
             </div>
@@ -107,10 +163,8 @@
     <div id="sidebar-create" class="sidebar">
         <button id="closeSidebarCreate">Cerrar</button>
         <h2>Crear Nuevo Usuario</h2>
-
-    <form data-method="POST" class="form-data" data-destination="users.store" calling-method="store" data-type="json">
+        <form data-method="POST" class="form-data" data-destination="users.store" calling-method="store" data-type="json">
             <div id="form-message" class="alert"></div>
-            
             <div class="grid">
                 <div>
                     <label for="user_name">
@@ -125,7 +179,6 @@
                     </label>
                 </div>
             </div>
-
             <div class="grid">
                 <div>
                     <label for="user_password">
@@ -154,11 +207,9 @@
                     Rol
                     <select id="create_role_id" name="create_role_id">
                         <option value="">Seleccione un rol</option>
-                       
                     </select>
                 </label>
             </div>
-
             <div class="form-actions">
                 <a href="/supabase/users" role="button" class="secondary" type="button">Cancelar</a>
                 <button type="submit" class="primary">
@@ -168,116 +219,109 @@
         </form>
     </div>
   
-
-<script>
-    let rolesMap = {};
+    <script>
+        let rolesMap = {};
     </script>
     <script type="module">
        import { CustomFetch } from './Assets/js/helpers/customFetch.js';
        import { routes } from './Assets/js/helpers/routes.js';
 
-     
-      const sidebarCreate = document.getElementById('sidebar-create');
-        const closeSidebarCreateBtn = document.getElementById('closeSidebarCreate');
-        const openSidebarCreateBtn = document.getElementById('openSidebarCreate');
+       const sidebarCreate = document.getElementById('sidebar-create');
+       const closeSidebarCreateBtn = document.getElementById('closeSidebarCreate');
+       const openSidebarCreateBtn = document.getElementById('openSidebarCreate');
         
-        // Cerrar sidebar de creación
-        closeSidebarCreateBtn.addEventListener('click', () => sidebarCreate.classList.remove('show'));
+       // Cerrar sidebar de creación
+       closeSidebarCreateBtn.addEventListener('click', () => sidebarCreate.classList.remove('show'));
 
-        // Abrir sidebar de creación
-        openSidebarCreateBtn.addEventListener('click', () => sidebarCreate.classList.add('show'));
+       // Abrir sidebar de creación
+       openSidebarCreateBtn.addEventListener('click', () => sidebarCreate.classList.add('show'));
 
-        // OBTENER LA LISTA D EROLES PARA EL SELECT UAR FETCH
+       // OBTENER LA LISTA DE ROLES PARA EL SELECT USAR FETCH
+       async function getRoles() {
+           const customFetch = new CustomFetch();
+           const { data } = await customFetch.get(routes.users.getAllRoles());
 
-        async function getRoles() {
-            const customFetch = new CustomFetch();
-            const { data } = await customFetch.get(routes.users.getAllRoles());
+           const createSelect = document.getElementById('create_role_id');
+           const editSelect = document.getElementById('edit_role_id');
 
-            const createSelect = document.getElementById('create_role_id');
-            const editSelect = document.getElementById('edit_role_id');
+           data.forEach(role => {
+               rolesMap[role.role_id] = role.role_name;
+               const option1 = document.createElement('option');
+               option1.value = role.role_id;
+               option1.textContent = role.role_name;
+               createSelect.appendChild(option1);
 
-            data.forEach(role => {
-            rolesMap[role.role_id] = role.role_name;
-            const option1 = document.createElement('option');
-            option1.value = role.role_id;
-            option1.textContent = role.role_name;
-            createSelect.appendChild(option1);
+               const option2 = document.createElement('option');
+               option2.value = role.role_id;
+               option2.textContent = role.role_name;
+               editSelect.appendChild(option2);
+           });
+       }
 
-            const option2 = document.createElement('option');
-            option2.value = role.role_id;
-            option2.textContent = role.role_name;
-            editSelect.appendChild(option2);
-    });
-}
+       getRoles();
 
+       const customFetch = new CustomFetch();
+       const sidebar = document.getElementById('sidebar');
+       const closeSidebarBtn = document.getElementById('closeSidebar');
+       const editForm = document.getElementById('editUserForm');
 
-      getRoles();
+       // Cerrar sidebar
+       closeSidebarBtn.addEventListener('click', () => sidebar.classList.remove('show'));
 
-        const customFetch = new CustomFetch();
-        const sidebar = document.getElementById('sidebar');
-        const closeSidebarBtn = document.getElementById('closeSidebar');
-        const editForm = document.getElementById('editUserForm');
+       // Abrir sidebar y rellenar form con datos del usuario
+       function openSidebar(user) {
+           sidebar.classList.add('show');
+           document.getElementById('editUserId').value = user.user_id;
+           document.getElementById('editUserName').value = user.user_name;
+           document.getElementById('editUserEmail').value = user.user_email;
+           document.getElementById('editUserStatus').value = user.user_status ? '1' : '0';
+           // Actualizar el atributo data-id del formulario
+           editForm.setAttribute('data-id', user.user_id);
+           document.getElementById('edit_role_id').value = user.role_id;
+       }
 
-        // Cerrar sidebar
-        closeSidebarBtn.addEventListener('click', () => sidebar.classList.remove('show'));
+       // Renderizar tabla de usuarios
+       function renderUsers(users) {
+           const tableBody = document.querySelector("#usersTable tbody");
+           tableBody.innerHTML = '';
 
-        // Abrir sidebar y rellenar form con datos del usuario
-        function openSidebar(user) {
-            sidebar.classList.add('show');
-            document.getElementById('editUserId').value = user.user_id;
-            document.getElementById('editUserName').value = user.user_name;
-            document.getElementById('editUserEmail').value = user.user_email;
-            document.getElementById('editUserStatus').value = user.user_status ? '1' : '0';
-            // Actualizar el atributo data-id del formulario
-            editForm.setAttribute('data-id', user.user_id);
-            document.getElementById('edit_role_id').value = user.role_id;
-        }
+           users.forEach(user => {
+               const tr = document.createElement('tr');
+               tr.id = user.user_id;
+               tr.innerHTML = `
+                   <td>${user.user_name}</td>
+                   <td>${user.user_email}</td>
+                   <td>${user.user_status ? 'Activo' : 'Inactivo'}</td>
+                   <td>${user.role_name}</td>
+                   <td>
+                       <button class="edit-btn">Editar</button>
+                       <button class="delete-btn">Eliminar</button>
+                   </td>
+               `;
+               tableBody.appendChild(tr);
 
-        // Renderizar tabla de usuarios
-        function renderUsers(users) {
-            const tableBody = document.querySelector("#usersTable tbody");
-            tableBody.innerHTML = '';
+               // Editar
+               tr.querySelector('.edit-btn').addEventListener('click', async () => {
+                   try {
+                       const { data: users } = await customFetch.get(routes.users.getOne(user.user_id));
+                       openSidebar(users);
+                   } catch (error) {
+                       console.error("No se pudo obtener el usuario:", error);
+                   }
+               });
 
-            users.forEach(user => {
-                const tr = document.createElement('tr');
-                tr.id = user.user_id;
-                tr.innerHTML = `
-                    <td>${user.user_name}</td>
-                    <td>${user.user_email}</td>
-                    <td>${user.user_status ? 'Activo' : 'Inactivo'}</td>
-                    <td>${user.role_name}</td>
-                    <td>
-                        <button class="edit-btn">Editar</button>
-                        <button class="delete-btn">Eliminar</button>
-                    </td>
-                `;
-                tableBody.appendChild(tr);
-
-                // Editar
-                tr.querySelector('.edit-btn').addEventListener('click', async () => {
-                    try {
-                        // 1️⃣ Obtener los datos actualizados del usuario desde el backend
-                        const { data: users } = await customFetch.get(routes.users.getOne(user.user_id));
-
-                        // 2️⃣ Pasar esos datos a la función que abre el sidebar
-                        openSidebar(users);
-                    } catch (error) {
-                        console.error("No se pudo obtener el usuario:", error);
-                    }
-                });
-
-                // Eliminar
-                tr.querySelector('.delete-btn').addEventListener('click', async () => {
-                    if (!confirm(`Eliminar usuario ${user.user_name}?`)) return;
-                    const res = await customFetch.delete(routes.users.delete(user.user_id));
-                    if (res.status === 'USER_DELETED') {
-                        removeRow(res.user_id);
-                    }
-
-                });
-            });
-        }
-
+               // Eliminar
+               tr.querySelector('.delete-btn').addEventListener('click', async () => {
+                   if (!confirm(`Eliminar usuario ${user.user_name}?`)) return;
+                   const res = await customFetch.delete(routes.users.delete(user.user_id));
+                   if (res.status === 'USER_DELETED') {
+                       removeRow(res.user_id);
+                       // Opcional: refresh paginación después de delete
+                       getPaginatedUsers(currentPage);
+                   }
+               });
+           });
+       }
     
        function removeRow(userId) {
            const row = document.querySelector(`tr[id="${userId}"]`);
@@ -286,50 +330,98 @@
            }
        }
 
+       let currentPage = 1; // Puedes cambiar esto si quieres
+       let totalPages = 1;  // Puedes cambiar esto si quieres
+       let perPage = document.getElementById('perPage').value;
+       let startDate = document.getElementById('startDate').value;
+       let endDate = document.getElementById('endDate').value;
+       let applyFilter = document.getElementById('applyFilter');
+       
+       applyFilter.addEventListener('click', () => {
+           
+       });
+     
 
+       async function getPaginatedUsers(page = 1) {
+           try {
+               const { data, pagination } = await customFetch.get(routes.users.getByPage(page, perPage,startDate,endDate));
 
-let currentPage = 1;
-let totalPages = 1;
-let perPage = 7; // Puedes cambiar esto si quieres
+               // Renderiza la tabla
+               renderUsers(data);
 
-async function getPaginatedUsers(page = 1) {
-    try {
-        const { data, pagination } = await customFetch.get(routes.users.getByPage(page, perPage));
+               // Actualiza variables
+               currentPage = pagination.currentPage;
+               totalPages = pagination.totalPages;
 
-        // Aquí puedes llamar a tu función que renderiza la tabla
-        renderUsers(data);
+               // Actualiza UI
+               document.getElementById('currentPage').textContent = currentPage;
+               if (document.getElementById('totalPagesDisplay')) {
+                   document.getElementById('totalPagesDisplay').textContent = totalPages;
+               }
 
-        currentPage = pagination.currentPage;
-        totalPages = pagination.totalPages;
+               // Renderiza los botones de páginas y controles
+               renderPagination();
 
-        document.getElementById('currentPage').textContent = currentPage;
+           } catch (error) {
+               console.error('Error al obtener usuarios paginados:', error);
+           }
+       }
 
-        document.getElementById('prevPage').disabled = currentPage === 1;
-        document.getElementById('nextPage').disabled = currentPage === totalPages;
+       function renderPagination() {
+           const prevBtn = document.getElementById('prevPage');
+           const nextBtn = document.getElementById('nextPage');
+           const pageNumbersContainer = document.getElementById('pageNumbers');
 
-    } catch (error) {
-        console.error('Error al obtener usuarios paginados:', error);
-    }
-}
+           if (!pageNumbersContainer) return;
 
-document.getElementById('prevPage').addEventListener('click', () => {
-    if (currentPage > 1) getPaginatedUsers(currentPage - 1);
-});
+           // Limpia botones previos
+           pageNumbersContainer.innerHTML = '';
 
-document.getElementById('nextPage').addEventListener('click', () => {
-    if (currentPage < totalPages) getPaginatedUsers(currentPage + 1);
-});
+           // Deshabilita prev/next
+           if (prevBtn) prevBtn.disabled = currentPage === 1;
+           if (nextBtn) nextBtn.disabled = currentPage === totalPages;
 
-// Cargar la primera página al inicio
-getPaginatedUsers(currentPage);
+           // Genera botones numéricos (ej. si 3 páginas: 1,2,3)
+           for (let i = 1; i <= totalPages; i++) {
+               const btn = document.createElement('button');
+               btn.textContent = i;
+               if (i === currentPage) {
+                   btn.classList.add('active');
+                   btn.disabled = true; // Página actual no clickable
+               }
+               btn.addEventListener('click', () => {
+                   getPaginatedUsers(i);
+               });
+               pageNumbersContainer.appendChild(btn);
+           }
+       }
 
+       // Inicialización
+       function initPagination() {
+           const prevBtn = document.getElementById('prevPage');
+           const nextBtn = document.getElementById('nextPage');
+
+           if (prevBtn) {
+               prevBtn.addEventListener('click', () => {
+                   if (currentPage > 1) getPaginatedUsers(currentPage - 1);
+               });
+           }
+
+           if (nextBtn) {
+               nextBtn.addEventListener('click', () => {
+                   if (currentPage < totalPages) getPaginatedUsers(currentPage + 1);
+               });
+           }
+
+           // Carga primera página y renderiza
+           getPaginatedUsers(1);
+       }
+
+       // Espera DOM cargado
+       document.addEventListener('DOMContentLoaded', initPagination);
     </script>
 
-    <div class="pagination">
-        <button id="prevPage">Anterior</button>
-        <span id="currentPage">1</span>
-        <button id="nextPage">Siguiente</button>
-    </div>
+
     <?php include __DIR__ . '/../Template/footer_admin.php'; ?>
 </body>
 </html>
