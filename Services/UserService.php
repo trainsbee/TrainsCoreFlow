@@ -29,6 +29,7 @@ class UserService {
             return [];
         }
     }
+    
 
     public function createUser(array $userData): array {
         $required = ['user_name', 'user_email', 'user_password', 'confirm_password', 'create_role_id'];
@@ -86,6 +87,7 @@ class UserService {
         $required = ['user_name', 'user_email', 'role_id'];
         Helpers::required($userData, $required);
         Helpers::email($userData['user_email'], ['gmail.com']);
+
         $existingUser = $this->isUserInUse($userData['user_name'], $userId);
         if ($existingUser) {
             throw new ValidationException("El usuario ya existe", ['user_name']);

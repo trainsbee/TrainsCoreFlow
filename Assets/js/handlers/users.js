@@ -59,7 +59,7 @@ export async function getUser(response) {
         const data = await processResponse(response, 'Users');
         
         switch (data.status) {
-            case 'success':
+            case 'USER_UPDATED':
             console.log(data.data) 
 
             default:
@@ -83,17 +83,32 @@ export async function update(response) {
     //     return validation;
     // }
     switch (data.status) {
-        case 'success':
+        case 'USER_UPDATED':
             console.log(data.data)
-        
+            updateUserRow(data.data);
+        function updateUserRow(user) {
+            const row = document.querySelector(`tr[id="${user.user_id}"]`);
+            if (!row) return;
+
+            row.cells[0].textContent = user.user_name;
+            row.cells[1].textContent = user.user_email;
+            row.cells[2].textContent = user.user_status ? "Activo" : "Inactivo";
+            row.cells[3].textContent = rolesMap[user.role_id];
+
+            row.classList.add('updated');
+
+
+
+            setTimeout(() => row.classList.remove('updated'), 1000);
+        }
             break;
 
         case 'error':
-            
+
             break;
 
         default:
-             
+
             break;
     }
 }

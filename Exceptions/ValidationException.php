@@ -12,5 +12,6 @@ class ValidationException extends \Exception {
     public function getFields(): array {
         return $this->fields;
     }
+    
 }
 ?>

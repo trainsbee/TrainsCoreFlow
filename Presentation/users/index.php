@@ -64,10 +64,10 @@
     <table id="usersTable">
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Nombre</th>
+                <th>Usuario</th>
                 <th>Email</th>
                 <th>Estado</th>
+                <th>Role</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -75,7 +75,7 @@
             <!-- Usuarios se cargarán aquí con JS -->
         </tbody>
     </table>
-    <?php include __DIR__ . '/../Template/footer_admin.php'; ?>
+
     <!-- Sidebar de edición -->
     <div id="sidebar" class="sidebar">
         <button id="closeSidebar">Cerrar</button>
@@ -169,12 +169,14 @@
     </div>
   
 
-
+<script>
+    let rolesMap = {};
+    </script>
     <script type="module">
        import { CustomFetch } from './Assets/js/helpers/customFetch.js';
        import { routes } from './Assets/js/helpers/routes.js';
 
-
+     
       const sidebarCreate = document.getElementById('sidebar-create');
         const closeSidebarCreateBtn = document.getElementById('closeSidebarCreate');
         const openSidebarCreateBtn = document.getElementById('openSidebarCreate');
@@ -195,6 +197,7 @@
             const editSelect = document.getElementById('edit_role_id');
 
             data.forEach(role => {
+            rolesMap[role.role_id] = role.role_name;
             const option1 = document.createElement('option');
             option1.value = role.role_id;
             option1.textContent = role.role_name;
@@ -237,11 +240,12 @@
 
             users.forEach(user => {
                 const tr = document.createElement('tr');
+                tr.id = user.user_id;
                 tr.innerHTML = `
-                    <td>${user.user_id.substring(0, 8)}...</td>
                     <td>${user.user_name}</td>
                     <td>${user.user_email}</td>
                     <td>${user.user_status ? 'Activo' : 'Inactivo'}</td>
+                    <td>${user.role_name}</td>
                     <td>
                         <button class="edit-btn">Editar</button>
                         <button class="delete-btn">Eliminar</button>
@@ -250,13 +254,26 @@
                 tableBody.appendChild(tr);
 
                 // Editar
-                tr.querySelector('.edit-btn').addEventListener('click', () => openSidebar(user));
+                tr.querySelector('.edit-btn').addEventListener('click', async () => {
+                    try {
+                        // 1️⃣ Obtener los datos actualizados del usuario desde el backend
+                        const { data: users } = await customFetch.get(routes.users.getOne(user.user_id));
+
+                        // 2️⃣ Pasar esos datos a la función que abre el sidebar
+                        openSidebar(users);
+                    } catch (error) {
+                        console.error("No se pudo obtener el usuario:", error);
+                    }
+                });
 
                 // Eliminar
                 tr.querySelector('.delete-btn').addEventListener('click', async () => {
                     if (!confirm(`Eliminar usuario ${user.user_name}?`)) return;
                     const res = await customFetch.delete(routes.users.delete(user.user_id));
-                    if (res.success) getUsers();
+                    if (res.status === 'USER_DELETED') {
+                        removeRow(res.user_id);
+                    }
+
                 });
             });
         }
@@ -265,6 +282,7 @@
         async function getUsers() {
             try {
                 const { data } = await customFetch.get(routes.users.getAll());
+                console.log(data)
                 renderUsers(data || []);
             } catch (error) {
                 console.error('Error al obtener usuarios:', error);
@@ -273,6 +291,13 @@
 
         // Ejecutar al cargar la página
         getUsers();
+       function removeRow(userId) {
+           const row = document.querySelector(`tr[id="${userId}"]`);
+           if (row) {
+               row.remove();
+           }
+       }
     </script>
+    <?php include __DIR__ . '/../Template/footer_admin.php'; ?>
 </body>
 </html>

@@ -45,6 +45,7 @@ $router->get('', ['home', 'index']);
 $router->get('/users', ['user', 'index']);
 $router->get('/users/getAllRoles', ['user', 'getAllRoles']);
 $router->get('/users/getAll', ['user', 'getAll']);
+$router->get('/users/{id}/getUserById', ['user', 'getUserById']);
 $router->get('/users/create', ['user', 'create']);
 $router->post('/users/store', ['user', 'store']);
 $router->get('/users/{id}/edit', ['user', 'edit']);

@@ -8,7 +8,7 @@ export const routes = {
         // CRUD básico
         getAll: () => `${API_BASE}users/getAll`,                          // GET /users
         getAllRoles: () => `${API_BASE}users/getAllRoles`,                          // GET /users/getAllRoles
-        getOne: (id) => `${API_BASE}users/${id}`,                  // GET /users/{id} (si implementas show)
+        getOne: (id) => `${API_BASE}users/${id}/getUserById`,                  // GET /users/{id} (si implementas show)
         store: () => `${API_BASE}users/store`,                     // POST /users/store
         update: (id) => `${API_BASE}users/${id}/update`,           // POST /users/{id}/update
         delete: (id) => `${API_BASE}users/${id}/delete`,           // POST /users/{id}/delete

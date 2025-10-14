@@ -8,6 +8,7 @@ class User {
     private $user_password;
     private $user_status;
     private $role_id;
+    private $role_name;
     private $created_at;
 
     /**
@@ -21,16 +22,20 @@ class User {
         $this->user_name = $data['user_name'] ?? null;
         $this->user_password = $data['user_password'] ?? null;
         $this->user_status = $data['user_status'] ?? true;
-        
-        // Asegurarnos de que role_id se asigne correctamente
-        if (isset($data['role_id'])) {
-            $this->role_id = $data['role_id'];
+        $this->role_id = $data['role_id'] ?? null;
+
+        // ✅ Asignar role_name si viene en la relación de Supabase
+        if (isset($data['roles']) && is_array($data['roles'])) {
+            $this->role_name = $data['roles']['role_name'] ?? null;
+        } elseif (isset($data['role_name'])) {
+            $this->role_name = $data['role_name'];
         } else {
-            $this->role_id = null;
+            $this->role_name = null;
         }
-        
+
         $this->created_at = $data['created_at'] ?? null;
     }
+
 
     /**
      * Convierte el objeto a un array para enviar a la API
@@ -43,13 +48,18 @@ class User {
             'user_name' => $this->user_name,
             'user_status' => $this->user_status
         ];
-        
-        // Agregar role_id solo si existe y no es nulo
+
+        // Agregar role_id si existe
         if ($this->role_id !== null) {
             $data['role_id'] = $this->role_id;
         }
 
-        // Agregar user_id solo si existe
+        // 👇 Agregar también el nombre del rol si está disponible
+        if (property_exists($this, 'role_name') && $this->role_name !== null) {
+            $data['role_name'] = $this->role_name;
+        }
+
+        // Agregar user_id si existe
         if ($this->user_id) {
             $data['user_id'] = $this->user_id;
         }
@@ -61,6 +71,7 @@ class User {
 
         return $data;
     }
+
 
     /**
      * Crea una instancia de User desde un array

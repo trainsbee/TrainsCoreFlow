@@ -2,6 +2,7 @@
 namespace Controllers;
 include_once __DIR__ . '/../Helpers/Helpers.php';
 use Core\BaseController;
+use JetBrains\PhpStorm\NoReturn;
 use Services\UserService;
 use Exception;
 use Helpers\Helpers;
@@ -15,24 +16,9 @@ class UserController extends BaseController {
     }
 
     /** -------- Helpers -------- */
-    protected function sanitizeForDb(array $data): array {
-        $sanitized = [];
-        foreach ($data as $key => $value) {
-            if (is_array($value)) {
-                $sanitized[$key] = $this->sanitizeForDb($value);
-            } else {
-                $value = trim((string)$value);
-                $sanitized[$key] = $value;
-            }
-        }
-        return $sanitized;
-    }
 
-    protected function sanitizeForView($value): string {
-        return htmlspecialchars((string)$value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    }
 
-    protected function jsonResponse($data, int $status = 200): void {
+    #[NoReturn] protected function jsonResponse($data, int $status = 200): void {
         header('Content-Type: application/json');
         http_response_code($status);
         echo json_encode($data);
@@ -40,7 +26,8 @@ class UserController extends BaseController {
     }
 
     /** -------- VISTAS (HTML) -------- */
-    public function index() {
+    public function index(): void
+    {
         try {
             $usuarios = $this->service->getAll(); //
         
@@ -53,9 +40,11 @@ class UserController extends BaseController {
             ]);
         }
     }
-    public function getAll() {
+    public function getAll(): void
+    {
         try {
             $usuarios = $this->service->getAll();
+
             $usersArray = array_map(fn($user) => $user->toArray(), $usuarios);
             $this->jsonResponse([
                 "success" => true,
@@ -68,8 +57,23 @@ class UserController extends BaseController {
             ], 400);
         }
     }
-
-    public function create() {
+    public function getUserById($id): void
+    {
+        try {
+            $user = $this->service->getUserById($id);
+            $this->jsonResponse([
+                "success" => true,
+                "data" => $user
+            ]);
+        } catch (Exception $e) {
+            $this->jsonResponse([
+                "success" => false,
+                "message" => $e->getMessage()
+            ], 400);
+        }
+    }
+    public function create(): void
+    {
         try {
             $roles = $this->service->getAllRoles();
             $this->renderView("users/create", [
@@ -81,7 +85,8 @@ class UserController extends BaseController {
             ]);
         }
     }
-    public function getAllRoles() {
+    public function getAllRoles(): void
+    {
         try {
             $roles = $this->service->getAllRoles();
             $this->jsonResponse([
@@ -118,7 +123,7 @@ class UserController extends BaseController {
             $input['create_role_id'] = Helpers::cleanInjection($input['create_role_id']);
             
             
-            print_r($input);
+            //print_r($input);
            
             $user = $this->service->createUser($input);
     
@@ -191,7 +196,8 @@ class UserController extends BaseController {
     
             $this->jsonResponse([
                 "status" => "USER_DELETED",
-                "message" => "Usuario eliminado exitosamente"
+                "message" => "Usuario eliminado exitosamente",
+                "user_id" => $id
             ], 200);
     
         } catch (\Exceptions\ValidationException $e) {
