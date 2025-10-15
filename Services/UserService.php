@@ -34,9 +34,9 @@ public function getByPage(int $page = 1, int $perPage = 10, $startDate = null, $
     $result = $this->repository->getByPage($page, $perPage, $startDate, $endDate);
 
     // Convertimos objetos User a arrays si es necesario
-    $result['users'] = array_map(
+    $result['data'] = array_map(
         fn($user) => is_object($user) && method_exists($user, 'toArray') ? $user->toArray() : $user,
-        $result['users']
+        $result['data']
     );
 
     return $result;

@@ -39,13 +39,53 @@ export async function store(response) {
         }
 
         // Casos exitosos y códigos de negocio
-        switch (data.status) {
-            case 'USER_CREATED':
-                console.log("✅ Usuario creado:", data.data);
-                break;
-            default:
-                console.warn("⚠️ Respuesta inesperada:", data);
-        }
+    switch (data.status) {
+    case 'USER_CREATED':
+        console.log("✅ Usuario creado:", data.data);
+
+        const table = document.getElementById('usersTable');
+        const tbody = table.querySelector('tbody');
+        const row = document.createElement('tr');
+        row.id = data.data.user_id;
+
+        // Celdas normales
+        row.innerHTML = `
+            <td>${data.data.user_name}</td>
+            <td>${data.data.user_email}</td>
+            <td>${data.data.user_status ? 'Activo' : 'Inactivo'}</td>
+            <td>${rolesMap[data.data.role_id]}</td>
+        `;
+
+        // 🔹 Celda de acciones
+        const actionsCell = document.createElement('td');
+
+        // 🔹 Crear botón Editar
+        const editBtn = document.createElement('button');
+        editBtn.classList.add('edit-btn');
+        editBtn.textContent = 'Editar';
+        editBtn.dataset.id = data.data.user_id;
+
+        // 🔹 Crear botón Eliminar
+        const deleteBtn = document.createElement('button');
+        deleteBtn.classList.add('delete-btn');
+        deleteBtn.textContent = 'Eliminar';
+        deleteBtn.dataset.id = data.data.user_id;
+
+        // Agregar botones a la celda
+        actionsCell.append(editBtn, deleteBtn);
+
+        // Agregar celda a la fila
+        row.appendChild(actionsCell);
+
+        // Agregar la fila a la tabla
+        tbody.appendChild(row);
+
+        break;
+
+    default:
+        console.warn("⚠️ Respuesta inesperada:", data);
+}
+
 
     } catch (error) {
         console.error("Error procesando store:", error.message);

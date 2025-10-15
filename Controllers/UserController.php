@@ -69,7 +69,7 @@ public function getByPage(): void
 
         $this->jsonResponse([
             "success" => true,
-            "data" => $result['users'],
+            "data" => $result['data'],
             "pagination" => $result['pagination']
         ]);
     } catch (Exception $e) {

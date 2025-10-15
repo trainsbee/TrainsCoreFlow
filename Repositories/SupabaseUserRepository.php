@@ -91,14 +91,14 @@ public function getByPage(int $page = 1, int $perPage = 10, $startDate = null, $
         // Construir filtros base
         $queryUsers = "select=*,roles(role_name)&limit={$perPage}&offset={$offset}";
         
-        // ➕ Cambio: Agregar filtro por rango de fechas si se proporcionan
+        // Agregar filtro por rango de fechas si se proporcionan
         if ($startDate !== null) {
             $queryUsers .= "&created_at=gte.{$startDate}";
         }
         if ($endDate !== null) {
-            // Opcional: Agregar fin del día al endDate para incluir todo el día (ej. 2025-10-14T23:59:59)
-            // $endDate = $endDate . 'T23:59:59'; // Descomenta si necesitas rango inclusivo por día
-            $queryUsers .= "&created_at=lte.{$endDate}";
+            // Ajustar endDate para incluir todo el día en UTC
+            $adjustedEndDate = $endDate . 'T23:59:59Z'; // Especificar UTC explícitamente
+            $queryUsers .= "&created_at=lte.{$adjustedEndDate}";
         }
 
         // 1️⃣ Traemos usuarios paginados con filtro
@@ -109,13 +109,13 @@ public function getByPage(int $page = 1, int $perPage = 10, $startDate = null, $
             $users = array_map(fn($userData) => User::fromArray($userData), $response['data']);
         }
 
-        // ➕ Cambio: Construir query para conteo con el mismo filtro de fechas
+        // Construir query para conteo con el mismo filtro de fechas
         $countQuery = 'select=user_id';
         if ($startDate !== null) {
             $countQuery .= "&created_at=gte.{$startDate}";
         }
         if ($endDate !== null) {
-            $countQuery .= "&created_at=lte.{$endDate}";
+            $countQuery .= "&created_at=lte.{$adjustedEndDate}";
         }
 
         // 2️⃣ Contamos total de registros con filtro
@@ -127,11 +127,7 @@ public function getByPage(int $page = 1, int $perPage = 10, $startDate = null, $
             ['prefer' => 'count=exact']
         );
 
-        // En Supabase con prefer count=exact, el total viene en headers, no en data. ¡Corrección importante!
-        // Asumiendo que tu $this->client maneja headers, ajusta si es necesario.
-        // Ejemplo: $totalRecords = $countResponse['headers']['content-range'][1] ?? 0; // Mejor usa headers
-        // Pero como en tu código usas count(data), lo adapto: si usas count=exact, data está vacío y total en header.
-        // ➕ Recomendación: Cambia a leer header para precisión.
+        // Manejo del total de registros desde el header content-range
         $totalRecords = isset($countResponse['headers']['content-range']) 
             ? (int) explode('/', $countResponse['headers']['content-range'])[1] 
             : (!empty($countResponse['data']) ? count($countResponse['data']) : 0);
@@ -139,7 +135,7 @@ public function getByPage(int $page = 1, int $perPage = 10, $startDate = null, $
         $totalPages = $totalRecords > 0 ? ceil($totalRecords / $perPage) : 1;
 
         return [
-            'users' => $users, // Cambiado de 'data' a 'users' para consistencia, pero ajusta si tu frontend espera 'data'
+            'data' => $users, // Cambiado a 'data' para coincidir con el frontend
             'pagination' => [
                 'currentPage' => $page,
                 'perPage' => $perPage,
@@ -217,7 +213,6 @@ public function getByPage(int $page = 1, int $perPage = 10, $startDate = null, $
     
     public function create(array $data): array
     {
-        print_r($data);
         try {
             $response = $this->client->request(
                 'rest/v1/users',
