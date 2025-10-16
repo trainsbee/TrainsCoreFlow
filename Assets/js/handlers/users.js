@@ -1,5 +1,4 @@
-
-import { validateFields } from '../utils/validations.js';
+import { httpGetPaginatedUsers, httpGetUser, httpDeleteUser, httpOpenSidebar, removeRow } from '../utils/users.js'; 
 
 async function processResponse(response, handlerName) {
     try {
@@ -54,28 +53,35 @@ export async function store(response) {
             <td>${data.data.user_email}</td>
             <td>${data.data.user_status ? 'Activo' : 'Inactivo'}</td>
             <td>${rolesMap[data.data.role_id]}</td>
+            <td>
+            <button class="delete-btn">Eliminar</button>
+            <button class="edit-btn">Editar</button>
+            </td>
         `;
-
-        // 🔹 Celda de acciones
-        const actionsCell = document.createElement('td');
-
-        // 🔹 Crear botón Editar
-        const editBtn = document.createElement('button');
-        editBtn.classList.add('edit-btn');
-        editBtn.textContent = 'Editar';
-        editBtn.dataset.id = data.data.user_id;
-
-        // 🔹 Crear botón Eliminar
-        const deleteBtn = document.createElement('button');
-        deleteBtn.classList.add('delete-btn');
-        deleteBtn.textContent = 'Eliminar';
-        deleteBtn.dataset.id = data.data.user_id;
-
-        // Agregar botones a la celda
-        actionsCell.append(editBtn, deleteBtn);
-
-        // Agregar celda a la fila
-        row.appendChild(actionsCell);
+            row.querySelector('.edit-btn').addEventListener('click', async () => {
+                try {
+                    console.log("🟣 Click detectado en Editar"); // 👈 este debe salir al hacer click
+                    const users = await hgetUser(data.data.user_id);
+                    console.log(users);
+                } catch (error) {
+                    console.error("No se pudo obtener el usuario:", error);
+                }
+            });
+            row.querySelector('.delete-btn').addEventListener('click', async () => {
+                try {
+                     console.log(data.data.user_id);
+                    const res = await hdeleteUser(data.data.user_id);
+                   
+                    if (res.status === 'USER_DELETED') {
+                        removeRow(data.data.user_id);
+                        getPaginatedUsers(currentPage);
+                       console.log("✅ Usuario eliminado:", data.data);
+                    }
+                } catch (error) {
+                    console.error("No se pudo eliminar el usuario:", error);
+                }
+            });
+        
 
         // Agregar la fila a la tabla
         tbody.appendChild(row);

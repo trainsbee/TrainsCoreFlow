@@ -138,52 +138,27 @@
    
        
     </script>
+   
     <script type="module">
-        import { CustomFetch } from './Assets/js/helpers/customFetch.js';
-        import { routes } from './Assets/js/helpers/routes.js';
- async function jsGetUser(userId) {
-            try {
-                        const { data: users } = await customFetch.get(routes.users.getOne(userId));
-                        openSidebar(users);
-                    } catch (error) {
-                        console.error("No se pudo obtener el usuario:", error);
-                    }
-        }
-        async function jsDeleteUser(userId, userName) {
-           if (!confirm(`Eliminar usuario ${userName}?`)) return;
-                    const res = await customFetch.delete(routes.users.delete(userId));
-                    if (res.status === 'USER_DELETED') {
-                        removeRow(userId);
-                        getPaginatedUsers(currentPage);
-                    }
-        }
- let currentPage = 1;
-        let totalPages = 1;
-        let perPage = 5;
-        let startDate = document.getElementById('startDate').value;
-        let endDate = document.getElementById('endDate').value;
-        const applyFilter = document.getElementById('applyFilter');
+        /**
+         * import all functions from users.js
+         */
+        import {  httpGetPaginatedUsers, httpGetUser, httpDeleteUser, httpGetRoles, removeRow, httpOpenSidebar } from './Assets/js/utils/users.js';
+       
 
-        const sidebarCreate = document.getElementById('sidebar-create');
-        const closeSidebarCreateBtn = document.getElementById('closeSidebarCreate');
-        const openSidebarCreateBtn = document.getElementById('openSidebarCreate');
-        
-        const customFetch = new CustomFetch();
-        const sidebar = document.getElementById('sidebar');
-        const closeSidebarBtn = document.getElementById('closeSidebar');
-        const editForm = document.getElementById('editUserForm');
-
-        
-        closeSidebarCreateBtn.addEventListener('click', () => sidebarCreate.classList.remove('show'));
-        openSidebarCreateBtn.addEventListener('click', () => sidebarCreate.classList.add('show'));
-
+        document.addEventListener('DOMContentLoaded', async () => {
+            
         async function getRoles() {
-            const customFetch = new CustomFetch();
-            const { data } = await customFetch.get(routes.users.getAllRoles());
+            try {
+
+            const roles = await httpGetRoles();
+            console.log(roles);
+            
+
             const createSelect = document.getElementById('create_role_id');
             const editSelect = document.getElementById('edit_role_id');
 
-            data.forEach(role => {
+            roles.data.forEach(role => {
                 rolesMap[role.role_id] = role.role_name;
                 const option1 = document.createElement('option');
                 option1.value = role.role_id;
@@ -194,23 +169,47 @@
                 option2.textContent = role.role_name;
                 editSelect.appendChild(option2);
             });
+            } catch (error) {
+                console.error('Error al obtener roles:', error);
+            }
         }
 
-        getRoles();
+
+        
+    await getRoles();
+    
+            console.log('DOMContentLoaded ejecutado');
+            document.getElementById('perPage').value = perPage;
+            initPagination();
+        });
+
+        
+        let currentPage = 1;
+        let totalPages = 1;
+        let perPage = 5;
+        let startDate = document.getElementById('startDate').value;
+        let endDate = document.getElementById('endDate').value;
+        const applyFilter = document.getElementById('applyFilter');
+
+        const sidebarCreate = document.getElementById('sidebar-create');
+        const closeSidebarCreateBtn = document.getElementById('closeSidebarCreate');
+        const openSidebarCreateBtn = document.getElementById('openSidebarCreate');
+        
+       
+        const sidebar = document.getElementById('sidebar');
+        const closeSidebarBtn = document.getElementById('closeSidebar');
+        
+
+        
+        closeSidebarCreateBtn.addEventListener('click', () => sidebarCreate.classList.remove('show'));
+        openSidebarCreateBtn.addEventListener('click', () => sidebarCreate.classList.add('show'));
+
 
         
 
         closeSidebarBtn.addEventListener('click', () => sidebar.classList.remove('show'));
 
-        function openSidebar(user) {
-            sidebar.classList.add('show');
-            document.getElementById('editUserId').value = user.user_id;
-            document.getElementById('editUserName').value = user.user_name;
-            document.getElementById('editUserEmail').value = user.user_email;
-            document.getElementById('editUserStatus').value = user.user_status ? '1' : '0';
-            editForm.setAttribute('data-id', user.user_id);
-            document.getElementById('edit_role_id').value = user.role_id;
-        }
+       
 
         function renderUsers(users) {
             const tableBody = document.querySelector("#usersTable tbody");
@@ -232,29 +231,31 @@
                 tableBody.appendChild(tr);
 
                 tr.querySelector('.edit-btn').addEventListener('click', async () => {
-                    jsGetUser(user.user_id);
+                        try {
+                            await httpOpenSidebar(user.user_id);
+                        } catch (error) {
+                            console.error("No se pudo obtener el usuario:", error);
+                        }
+                  
+
                 });
 
                 tr.querySelector('.delete-btn').addEventListener('click', async () => {
-                   jsDeleteUser(user.user_id, user.user_name);
+                  try {
+                    const res = await httpDeleteUser(user.user_id);
+                    if (res.status === 'USER_DELETED') {
+                        removeRow(user.user_id);
+                        console.log("eliminado", user);
+                        getPaginatedUsers(currentPage);
+                    }
+                } catch (error) {
+                    console.error("No se pudo eliminar el usuario:", error);
+                }
                 });
             });
-        }
+                } 
     
-        function removeRow(userId) {
-            const row = document.querySelector(`tr[id="${userId}"]`);
-            if (row) {
-                row.remove();
-            }
-        }
 
-       
-
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOMContentLoaded ejecutado');
-            document.getElementById('perPage').value = perPage;
-            initPagination();
-        });
 
         // Actualizar perPage y disparar petición con fechas actuales
         document.getElementById('perPage').addEventListener('change', (e) => {
@@ -295,13 +296,16 @@
         });
 
         async function getPaginatedUsers(page = 1) {
+            
             try {
                 const callId = Math.random().toString(36).substring(2, 8);
                 console.log(`Iniciando getPaginatedUsers (callId: ${callId})`, { page, perPage, startDate, endDate });
-                const url = routes.users.getByPage(page, perPage, startDate, endDate);
-                console.log(`URL generada (callId: ${callId}):`, url);
+                
+             
 
-                const { data, pagination } = await customFetch.get(url);
+                const { data, pagination } = await httpGetPaginatedUsers(page, perPage, startDate, endDate);
+
+                console.log("🟣 users", data);
 
                 renderUsers(data);
                 currentPage = pagination.currentPage;
