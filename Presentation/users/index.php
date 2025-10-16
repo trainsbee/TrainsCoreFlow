@@ -157,11 +157,22 @@
                         getPaginatedUsers(currentPage);
                     }
         }
-
+ let currentPage = 1;
+        let totalPages = 1;
+        let perPage = 5;
+        let startDate = document.getElementById('startDate').value;
+        let endDate = document.getElementById('endDate').value;
+        const applyFilter = document.getElementById('applyFilter');
 
         const sidebarCreate = document.getElementById('sidebar-create');
         const closeSidebarCreateBtn = document.getElementById('closeSidebarCreate');
         const openSidebarCreateBtn = document.getElementById('openSidebarCreate');
+        
+        const customFetch = new CustomFetch();
+        const sidebar = document.getElementById('sidebar');
+        const closeSidebarBtn = document.getElementById('closeSidebar');
+        const editForm = document.getElementById('editUserForm');
+
         
         closeSidebarCreateBtn.addEventListener('click', () => sidebarCreate.classList.remove('show'));
         openSidebarCreateBtn.addEventListener('click', () => sidebarCreate.classList.add('show'));
@@ -187,10 +198,7 @@
 
         getRoles();
 
-        const customFetch = new CustomFetch();
-        const sidebar = document.getElementById('sidebar');
-        const closeSidebarBtn = document.getElementById('closeSidebar');
-        const editForm = document.getElementById('editUserForm');
+        
 
         closeSidebarBtn.addEventListener('click', () => sidebar.classList.remove('show'));
 
@@ -240,12 +248,7 @@
             }
         }
 
-        let currentPage = 1;
-        let totalPages = 1;
-        let perPage = 5;
-        let startDate = document.getElementById('startDate').value;
-        let endDate = document.getElementById('endDate').value;
-        const applyFilter = document.getElementById('applyFilter');
+       
 
         document.addEventListener('DOMContentLoaded', () => {
             console.log('DOMContentLoaded ejecutado');
