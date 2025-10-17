@@ -45,3 +45,4 @@ export async function httpOpenSidebar(userId) {
     editForm.setAttribute('data-id', users.user_id);
     document.getElementById('edit_role_id').value = users.role_id;
 }
+

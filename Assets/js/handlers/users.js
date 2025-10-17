@@ -61,8 +61,8 @@ export async function store(response) {
             row.querySelector('.edit-btn').addEventListener('click', async () => {
                 try {
                     console.log("🟣 Click detectado en Editar"); // 👈 este debe salir al hacer click
-                    const users = await hgetUser(data.data.user_id);
-                    console.log(users);
+                    const users = await httpGetUser(data.data.user_id);
+                    await httpOpenSidebar(users.user_id);
                 } catch (error) {
                     console.error("No se pudo obtener el usuario:", error);
                 }
@@ -70,11 +70,11 @@ export async function store(response) {
             row.querySelector('.delete-btn').addEventListener('click', async () => {
                 try {
                      console.log(data.data.user_id);
-                    const res = await hdeleteUser(data.data.user_id);
+                    const res = await httpDeleteUser(data.data.user_id);
                    
                     if (res.status === 'USER_DELETED') {
                         removeRow(data.data.user_id);
-                        getPaginatedUsers(currentPage);
+                        //getPaginatedUsers(currentPage);
                        console.log("✅ Usuario eliminado:", data.data);
                     }
                 } catch (error) {

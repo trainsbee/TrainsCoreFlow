@@ -246,7 +246,7 @@
                     if (res.status === 'USER_DELETED') {
                         removeRow(user.user_id);
                         console.log("eliminado", user);
-                        getPaginatedUsers(currentPage);
+                        //getPaginatedUsers(currentPage);
                     }
                 } catch (error) {
                     console.error("No se pudo eliminar el usuario:", error);
