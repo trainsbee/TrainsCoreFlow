@@ -2,15 +2,15 @@
 namespace Models;
 
 class User {
-    private $user_id;
-    private $user_email;
-    private $user_name;
-    private $user_password;
-    private $user_status;
-    private $role_id;
-    private $role_name;
-    private $created_at;
-
+    public ?string $user_id;
+    public ?string $user_email;
+    public ?string $user_name;
+    public ?string $user_password;
+    public ?bool $user_status;
+    public ?string $role_id;
+    public ?string $role_name;
+    public ?string $created_at;
+    public ?string $updated_at;
     /**
      * Constructor de la clase User
      * 
@@ -23,6 +23,11 @@ class User {
         $this->user_password = $data['user_password'] ?? null;
         $this->user_status = $data['user_status'] ?? true;
         $this->role_id = $data['role_id'] ?? null;
+        $this->created_at = $data['created_at'] ?? null;
+        $this->updated_at = $data['updated_at'] ?? null;
+
+        $this->role_name = $data['role_name'] ?? null;
+
 
         // ✅ Asignar role_name si viene en la relación de Supabase
         if (isset($data['roles']) && is_array($data['roles'])) {
@@ -33,7 +38,6 @@ class User {
             $this->role_name = null;
         }
 
-        $this->created_at = $data['created_at'] ?? null;
     }
 
 
@@ -42,35 +46,39 @@ class User {
      * 
      * @return array
      */
-    public function toArray(): array {
-        $data = [
-            'user_email' => $this->user_email,
-            'user_name' => $this->user_name,
-            'user_status' => $this->user_status
-        ];
+  public function toArray(): array {
+    $data = [
+        'user_email' => $this->user_email,
+        'user_name' => $this->user_name,
+        'user_status' => $this->user_status
+    ];
 
-        // Agregar role_id si existe
-        if ($this->role_id !== null) {
-            $data['role_id'] = $this->role_id;
-        }
-
-        // 👇 Agregar también el nombre del rol si está disponible
-        if (property_exists($this, 'role_name') && $this->role_name !== null) {
-            $data['role_name'] = $this->role_name;
-        }
-
-        // Agregar user_id si existe
-        if ($this->user_id) {
-            $data['user_id'] = $this->user_id;
-        }
-
-        // Agregar password solo si existe
-        if ($this->user_password) {
-            $data['user_password'] = $this->user_password;
-        }
-
-        return $data;
+    if ($this->role_id !== null) {
+        $data['role_id'] = $this->role_id;
     }
+
+    if (property_exists($this, 'role_name') && $this->role_name !== null) {
+        $data['role_name'] = $this->role_name;
+    }
+
+    if ($this->user_id) {
+        $data['user_id'] = $this->user_id;
+    }
+
+    if ($this->user_password) {
+        $data['user_password'] = $this->user_password;
+    }
+
+    // ✅ Agregar created_at y updated_at
+    if ($this->created_at) {
+        $data['created_at'] = $this->created_at;
+    }
+    if ($this->updated_at) {
+        $data['updated_at'] = $this->updated_at;
+    }
+
+    return $data;
+}
 
 
     /**

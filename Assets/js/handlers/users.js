@@ -61,8 +61,8 @@ export async function store(response) {
             row.querySelector('.edit-btn').addEventListener('click', async () => {
                 try {
                     console.log("🟣 Click detectado en Editar"); // 👈 este debe salir al hacer click
-                    const users = await httpGetUser(data.data.user_id);
-                    await httpOpenSidebar(users.user_id);
+                    
+                    await httpOpenSidebar(data.data.user_id);
                 } catch (error) {
                     console.error("No se pudo obtener el usuario:", error);
                 }
