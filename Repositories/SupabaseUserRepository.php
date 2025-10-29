@@ -1,516 +1,395 @@
-<?php 
-require_once 'settings.php';
-require_once 'db.php';
+<?php
 
-// Pass users data to JavaScript - we'll handle auth client-side
-$users_json = json_encode($users);
-?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestión de Pausas - Administrador</title>
-  <link rel="stylesheet" href="assets/css/app.css">
-  <script src="https://unpkg.com/feather-icons"></script>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 20px;
-  }
-  
-  .container {
-    max-width: 1000px;
-    margin: 0 auto;
-  }
-  
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
-  }
-  
-  th, td {
-    border: 1px solid #ddd;
-    padding: 8px 12px;
-    text-align: left;
-  }
-  
-  th {
-    background-color: #f2f2f2;
-  }
-  
-  .btn {
-    padding: 4px 8px;
-    text-decoration: none;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 13px;
-  }
-  
-  .modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 1000;
-  }
-  
-  .modal-content {
-    background: white;
-    margin: 50px auto;
-    padding: 20px;
-    width: 90%;
-    max-width: 800px;
-    max-height: 80vh;
-    overflow-y: auto;
-  }
-  
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
-  }
-  
-  .close-btn {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-  }
-</style>
-</head>
-<body>
-  <div class="container">
-    <?php include 'partials/nav.php'; ?>
-    
-    <h1>Cargando...</h1>
-    <p>Por favor espere...</p>
-    
-    <div style="margin: 20px 0;">
-      <label for="start-date">Fecha de inicio:</label>
-      <input type="date" id="start-date" value="<?php echo date('Y-m-d'); ?>">
-      
-      <label for="end-date" style="margin-left: 10px;">Fecha de fin:</label>
-      <input type="date" id="end-date" value="<?php echo date('Y-m-d'); ?>">
-      
-      <button onclick="loadEmployees()" style="margin-left: 10px;">Filtrar</button>
-    </div>
-    
-    <!-- Sección de Pausas Activas -->
-    <div id="active-pauses-summary" style="margin: 20px 0;">
-      <h2>Pausas Activas</h2>
-      <div id="active-pauses-list">
-        <p>Cargando pausas activas...</p>
-      </div>
-    </div>
-    
-    <h2>Empleados</h2>
-    <table id="employees-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-      <thead>
-        <tr>
-          <th style="text-align: left; padding: 8px; border-bottom: 1px solid #ddd;">Nombre</th>
-          <th style="text-align: left; padding: 8px; border-bottom: 1px solid #ddd;">ID</th>
-          <th style="text-align: center; padding: 8px; border-bottom: 1px solid #ddd;">Pausas Activas</th>
-          <th style="text-align: center; padding: 8px; border-bottom: 1px solid #ddd;">Total Pausas</th>
-          <th style="text-align: center; padding: 8px; border-bottom: 1px solid #ddd;">Tiempo Total</th>
-          <th style="text-align: right; padding: 8px; border-bottom: 1px solid #ddd;">Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="employees-list">
-        <tr>
-          <td colspan="6" style="text-align: center; padding: 15px;">Cargando empleados...</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-  
-  <!-- Pauses Modal -->
-  <div id="pauses-modal" class="modal">
-    <div class="modal-content" style="max-width: 800px; width: 90%;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="margin: 0;">Pausas de <span id="employee-name"></span></h2>
-        <button onclick="closeModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
-      </div>
-      
-      <!-- Resumen de Pausas -->
-      <div id="pauses-summary" style="margin-bottom: 20px;">
-        <p>Cargando resumen...</p>
-      </div>
-      
-      <h3>Pausas Activas</h3>
-      <div id="active-pauses">
-        <p>Cargando pausas activas...</p>
-      </div>
-      
-      <div style="margin-top: 20px;">
-        <h3>Historial</h3>
-        <div id="pauses-history">
-          <p>Cargando historial de pausas...</p>
-        </div>
-      </div>
-    </div>
-  </div>
+namespace Repositories;
 
-  <script>
-    // Global variables
-    const users = <?php echo $users_json; ?>;
-    let currentUser = null;
-    let currentEmployeeId = '';
+use Core\SupabaseClient;
+use Models\User;
+use Models\Role;
+
+class SupabaseUserRepository implements UserRepositoryInterface
+{
+    private $client;
     
-    // Check authentication
-    function checkAuth() {
-      const userData = localStorage.getItem('currentUser'); 
-      if (!userData) {
-        window.location.href = 'auth.php';
-        return false;
-      }
-      
-      try {
-        currentUser = JSON.parse(userData);
-        
-        // Verify user exists in our database and is an admin
-        let userFound = false;
-        let isAdmin = currentUser.role === 'admin';
-        
-        // First check if user is a manager
-        for (const managerId in users) {
-          const manager = users[managerId];
-          
-          // Check if current user is this manager
-          if (manager.id === currentUser.id) {
-            userFound = true;
-            // Add manager's employees to the currentUser object for easier access
-            currentUser.employees = manager.employees || [];
-            break;
-          }
-          
-          // Check if current user is an employee of this manager
-          const employee = manager.employees.find(emp => emp.id === currentUser.id);
-          if (employee) {
-            userFound = true;
-            // Add manager's department to the employee
-            currentUser.department = manager.DEPARTMENT || '';
-            break;
-          }
-        }
-        
-        if (!userFound || !isAdmin) {
-          window.location.href = 'dashboard.php';
-          return false;
-        }
-        
-        return true;
-      } catch (e) {
-        console.error('Error parsing user data:', e);
-        window.location.href = 'auth.php';
-        return false;
-      }
+    public function __construct(SupabaseClient $client)
+    {
+        $this->client = $client;
     }
     
-    // Logout function
-    function logout() {
-      localStorage.removeItem('currentUser');
-      window.location.href = 'auth.php';
-    }
-    
-    document.addEventListener('DOMContentLoaded', function() {
-      if (checkAuth()) {
-        // Update admin info in the UI
-        document.querySelector('h1').textContent = `Gestión de Pausas - ${currentUser.DEPARTMENT || currentUser.department || 'Administración'}`;
-        document.querySelector('p').textContent = `Usuario: ${currentUser.name} (${currentUser.role === 'admin' ? 'Administrador' : 'Empleado'})`;
-        
-        loadEmployees();
-        feather.replace();
-      }
-    });
-    
-    async function loadEmployees() {
-      const startDate = document.getElementById('start-date').value;
-      const endDate = document.getElementById('end-date').value;
-      
-      // Get employees for the current manager
-      let employees = [];
-      
-      // Find the manager's employees
-      for (const managerId in users) {
-        const manager = users[managerId];
-        
-        // If current user is this manager, get their employees
-        if (manager.id === currentUser.id) {
-          employees = manager.employees || [];
-          break;
-        }
-        
-        // If current user is an employee of this manager, get all employees from this manager
-        if (manager.employees.some(e => e.id === currentUser.id)) {
-          employees = manager.employees;
-          currentUser.department = manager.DEPARTMENT || '';
-          // Update the department in the UI
-          document.querySelector('h1').textContent = `Gestión de Pausas - ${currentUser.department}`;
-          break;
-        }
-      }
-      
-      const employeesList = document.getElementById('employees-list');
-      employeesList.innerHTML = `
-        <tr>
-          <td colspan="6" style="text-align: center; padding: 15px;">Cargando estadísticas de pausas...</td>
-        </tr>`;
-      
-      if (employees.length === 0) {
-        employeesList.innerHTML = `
-          <tr>
-            <td colspan="6" style="text-align: center;">No hay empleados asignados.</td>
-          </tr>`;
-        document.getElementById('active-pauses-list').innerHTML = '<p>No hay empleados para mostrar.</p>';
-        return;
-      }
-      
-      try {
-        // Get employee IDs
-        const employeeIds = employees.map(e => e.id).join(',');
-        
-        // Fetch pause statistics for all employees ONCE
-        const response = await fetch(`api/get_employee_stats.php?employee_ids=${employeeIds}&start_date=${startDate}&end_date=${endDate}`);
-        const result = await response.json();
-        
-        if (!result.success) {
-          throw new Error(result.message || 'Error al cargar estadísticas');
-        }
-        
-        const stats = result.data || {};
-        
-        // Render active pauses summary using the fetched data
-        renderActivePausesSummary(stats, employees);
-        
-        // Clear loading message and render employees table
-        employeesList.innerHTML = '';
-        
-        // Create rows for each employee with their stats
-        employees.forEach(employee => {
-          const employeeStats = stats[employee.id] || {
-            active_pauses: 0,
-            total_pauses: 0,
-            total_pause_time: '00:00:00'
-          };
-          
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td style="padding: 8px; border-bottom: 1px solid #eee;">${employee.name || 'N/A'}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #eee;">${employee.id || 'N/A'}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center; color: ${employeeStats.active_pauses > 0 ? '#dc3545' : '#28a745'}; font-weight: 500;">
-              ${employeeStats.active_pauses}
-            </td>
-            <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">
-              ${employeeStats.total_pauses}
-            </td>
-            <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center; font-family: monospace;">
-              ${employeeStats.total_pause_time || '00:00:00'}
-            </td>
-            <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">
-              <button class="btn" onclick="viewPauses('${employee.id}', '${(employee.name || '').replace(/'/g, "\\'")}')" style="padding: 4px 8px; font-size: 13px;">
-                <i data-feather="eye" style="width: 14px; height: 14px;"></i> Ver
-              </button>
-            </td>
-          `;
-          employeesList.appendChild(row);
-        });
-        
-      } catch (error) {
-        console.error('Error loading employee stats:', error);
-        employeesList.innerHTML = `
-          <tr>
-            <td colspan="6" style="text-align: center; color: #dc3545;">
-              Error al cargar las estadísticas: ${error.message}
-            </td>
-          </tr>`;
-        document.getElementById('active-pauses-list').innerHTML = '<p style="color: red;">Error al cargar las pausas activas.</p>';
-      }
-      
-      feather.replace();
-    }
-    
-    // New function to render active pauses summary using existing data
-    function renderActivePausesSummary(stats, employees) {
-      const activePausesList = document.getElementById('active-pauses-list');
-      
-      const employeesWithPauses = [];
-      
-      // Process the data
-      for (const employeeId in stats) {
-        const employeeStats = stats[employeeId];
-        if (employeeStats.active_pauses > 0) {
-          const employee = employees.find(e => e.id === employeeId);
-          if (employee) {
-            employeesWithPauses.push({
-              ...employee,
-              ...employeeStats
-            });
-          }
-        }
-      }
-      
-      // Display the active pauses summary
-      if (employeesWithPauses.length === 0) {
-        activePausesList.innerHTML = '<p>No hay pausas activas en este momento.</p>';
-        return;
-      }
-      
-      // Create table with active pauses
-      let tableHTML = `
-        <div style="overflow-x: auto;">
-          <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-            <thead>
-              <tr style="background-color: #f2f2f2;">
-                <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Empleado</th>
-                <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Departamento</th>
-                <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Hora de Inicio</th>
-                <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Tiempo Transcurrido</th>
-                <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Razón</th>
-              </tr>
-            </thead>
-            <tbody>
-      `;
-      
-      employeesWithPauses.forEach(emp => {
-        if (emp.pauses && emp.pauses.length > 0) {
-          emp.pauses.forEach((pause, index) => {
-            const isFirst = index === 0;
-            // Use display_time for showing the time, and start_time for calculations
-            const displayTime = pause.display_time || (pause.start_time.includes('T') 
-              ? pause.start_time.split('T')[1].split('.')[0] 
-              : pause.start_time);
+    public function getAll(): array
+    {
+        try {
+            $response = $this->client->request(
+                'rest/v1/users',
+                'GET',
+                null,
+                'select=*,roles(role_name)'
+            );
             
-            tableHTML += `
-              <tr style="border-bottom: 1px solid #eee;" 
-                  onclick="viewPauses('${emp.id}', '${emp.name.replace(/'/g, "\\'")}')" 
-                  style="cursor: pointer;" 
-                  onmouseover="this.style.backgroundColor='#f9f9f9'" 
-                  onmouseout="this.style.backgroundColor='transparent'">
-                <td style="padding: 10px;${isFirst ? 'border-top: 1px solid #eee;' : ''}">${isFirst ? emp.name : ''}</td>
-                <td style="padding: 10px;${isFirst ? 'border-top: 1px solid #eee;' : ''}">${isFirst ? (emp.department || 'N/A') : ''}</td>
-                <td style="padding: 10px;${isFirst ? 'border-top: 1px solid #eee;' : ''}">${displayTime}</td>
-                <td style="padding: 10px;${isFirst ? 'border-top: 1px solid #eee;' : ''}" class="elapsed-time" data-start="${pause.start_time}">00:00:00</td>
-                <td style="padding: 10px;${isFirst ? 'border-top: 1px solid #eee;' : ''}">${pause.reason || 'Sin razón'}</td>
-              </tr>
-            `;
-          });
-        } else {
-          tableHTML += `
-            <tr style="border-bottom: 1px solid #eee;" 
-                onclick="viewPauses('${emp.id}', '${emp.name.replace(/'/g, "\\'")}')" 
-                style="cursor: pointer;" 
-                onmouseover="this.style.backgroundColor='#f9f9f9'" 
-                onmouseout="this.style.backgroundColor='transparent'">
-              <td style="padding: 10px;">${emp.name}</td>
-              <td style="padding: 10px;">${emp.department || 'N/A'}</td>
-              <td style="padding: 10px;" colspan="3">Sin pausas activas</td>
-            </tr>
-          `;
+            if (empty($response['data'])) {
+                return [];
+            }
+            
+            return array_map(function($userData) {
+                return User::fromArray($userData);
+            }, $response['data']);
+            
+        } catch (\Exception $e) {
+            if (defined('APP_DEBUG') && APP_DEBUG) {
+                error_log('Error in SupabaseUserRepository->getAll(): ' . $e->getMessage());
+            }
+            throw $e;
         }
-      });
-      
-      tableHTML += `
-            </tbody>
-          </table>
-        </div>
-      `;
-      
-      activePausesList.innerHTML = tableHTML;
     }
-    
-    function viewPauses(employeeId, employeeName) {
-      currentEmployeeId = employeeId;
-      document.getElementById('employee-name').textContent = employeeName;
-      document.getElementById('pauses-modal').style.display = 'flex';
-      
-      // Clear previous content and show loading
-      document.getElementById('pauses-summary').innerHTML = 'Cargando...';
-      document.getElementById('active-pauses').innerHTML = '';
-      document.getElementById('pauses-history').innerHTML = '';
-      
-      // Aquí puedes agregar una fetch específica para el historial del empleado individual si es necesario,
-      // ya que el PHP actual no devuelve el historial detallado en la respuesta general.
-      // Por ejemplo:
-      // fetch(`api/get_employee_pauses.php?employee_id=${employeeId}&start_date=...&end_date=...`)
-      // Pero como el código original no lo tiene implementado, lo dejo como está.
-    }
-    
-    function closeModal() {
-      document.getElementById('pauses-modal').style.display = 'none';
-    }
-    
-    // Function to format time difference
-    function formatDuration(startTime) {
-      // Try to parse the start time as a date
-      let start = new Date(startTime);
-      
-      // If parsing failed, try to handle it as a time-only string (HH:MM:SS)
-      if (isNaN(start.getTime())) {
-        const timeParts = startTime.match(/(\d{2}):(\d{2}):(\d{2})/);
-        if (timeParts) {
-          const now = new Date();
-          start = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate(),
-            parseInt(timeParts[1]),
-            parseInt(timeParts[2]),
-            parseInt(timeParts[3])
-          );
-          
-          // If the calculated time is in the future, it's from yesterday
-          if (start > now) {
-            start.setDate(start.getDate() - 1);
-          }
+public function getByPage1(int $page = 1, int $perPage = 10): array
+{
+    try {
+        $offset = ($page - 1) * $perPage;
+
+        // 1️⃣ Traemos usuarios paginados
+        $queryUsers = "select=*,roles(role_name)&limit={$perPage}&offset={$offset}";
+        $response = $this->client->request('rest/v1/users', 'GET', null, $queryUsers);
+
+        $users = [];
+        if (!empty($response['data']) && is_array($response['data'])) {
+            $users = array_map(fn($userData) => User::fromArray($userData), $response['data']);
         }
-      }
-      
-      const now = new Date();
-      const diffMs = now - start;
-      
-      // Calculate hours, minutes, seconds
-      const totalSeconds = Math.floor(diffMs / 1000);
-      const hours = Math.floor(totalSeconds / 3600);
-      const minutes = Math.floor((totalSeconds % 3600) / 60);
-      const seconds = totalSeconds % 60;
-      
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+        // 2️⃣ Contamos total de registros correctamente
+        $countResponse = $this->client->request(
+            'rest/v1/users',
+            'GET',
+            null,
+            'select=user_id',
+            ['prefer' => 'count=exact']
+        );
+
+        $totalRecords = !empty($countResponse['data']) ? count($countResponse['data']) : 0;
+        $totalPages = $totalRecords > 0 ? ceil($totalRecords / $perPage) : 1;
+
+        return [
+            'users' => $users,
+            'pagination' => [
+                'currentPage' => $page,
+                'perPage' => $perPage,
+                'totalPages' => $totalPages,
+                'totalRecords' => $totalRecords
+            ]
+        ];
+
+    } catch (\Exception $e) {
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            error_log('Error in SupabaseUserRepository->getByPage(): ' . $e->getMessage());
+        }
+        throw $e;
+    }
+}
+public function getByPage(int $page = 1, int $perPage = 10, $startDate = null, $endDate = null): array
+{
+    try {
+        $offset = ($page - 1) * $perPage;
+
+        // Construir filtros base
+        $queryUsers = "select=*,roles(role_name)&limit={$perPage}&offset={$offset}";
+        
+        // Agregar filtro por rango de fechas si se proporcionan
+        if ($startDate !== null) {
+            $queryUsers .= "&created_at=gte.{$startDate}";
+        }
+        if ($endDate !== null) {
+            // Ajustar endDate para incluir todo el día en UTC
+            $adjustedEndDate = $endDate . 'T23:59:59Z'; // Especificar UTC explícitamente
+            $queryUsers .= "&created_at=lte.{$adjustedEndDate}";
+        }
+
+        // 1️⃣ Traemos usuarios paginados con filtro
+        $response = $this->client->request('rest/v1/users', 'GET', null, $queryUsers);
+
+        $users = [];
+        if (!empty($response['data']) && is_array($response['data'])) {
+            $users = array_map(fn($userData) => User::fromArray($userData), $response['data']);
+        }
+
+        // Construir query para conteo con el mismo filtro de fechas
+        $countQuery = 'select=user_id';
+        if ($startDate !== null) {
+            $countQuery .= "&created_at=gte.{$startDate}";
+        }
+        if ($endDate !== null) {
+            $countQuery .= "&created_at=lte.{$adjustedEndDate}";
+        }
+
+        // 2️⃣ Contamos total de registros con filtro
+        $countResponse = $this->client->request(
+            'rest/v1/users',
+            'GET',
+            null,
+            $countQuery,
+            ['prefer' => 'count=exact']
+        );
+
+        // Manejo del total de registros desde el header content-range
+        $totalRecords = isset($countResponse['headers']['content-range']) 
+            ? (int) explode('/', $countResponse['headers']['content-range'])[1] 
+            : (!empty($countResponse['data']) ? count($countResponse['data']) : 0);
+
+        $totalPages = $totalRecords > 0 ? ceil($totalRecords / $perPage) : 1;
+
+        return [
+            'data' => $users, // Cambiado a 'data' para coincidir con el frontend
+            'pagination' => [
+                'currentPage' => $page,
+                'perPage' => $perPage,
+                'totalPages' => $totalPages,
+                'totalRecords' => $totalRecords
+            ]
+        ];
+
+    } catch (\Exception $e) {
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            error_log('Error in SupabaseUserRepository->getByPage(): ' . $e->getMessage());
+        }
+        throw $e;
+    }
+}
+
+
+
+    public function getRoleById(string $roleId): ?array {
+        try {
+            $response = $this->client->request(
+                'rest/v1/roles',
+                'GET',
+                null,
+                'role_id=eq.' . $roleId . '&select=role_id,role_name'
+            );
+            
+            if (empty($response['data'])) {
+                return null;
+            }
+            
+            return $response['data'][0];
+            
+        } catch (\Exception $e) {
+            if (defined('APP_DEBUG') && APP_DEBUG) {
+                error_log('Error in SupabaseUserRepository->getRoleById(): ' . $e->getMessage());
+            }
+            return null;
+        }
     }
     
-    // Function to update elapsed times
-    function updateElapsedTimes() {
-      document.querySelectorAll('.elapsed-time').forEach(element => {
-        const startTime = element.getAttribute('data-start');
-        element.textContent = formatDuration(startTime);
-      });
+    public function findById(string $id): ?array
+    {
+        try {
+            $response = $this->client->request(
+                'rest/v1/users',
+                'GET',
+                null,
+                'user_id=eq.' . $id . '&select=*,roles(role_name)'
+            );
+            
+            if (empty($response['data'])) {
+                return null;
+            }
+            
+            $userData = $response['data'][0];
+            if (is_object($userData)) {
+                $userData = (array) $userData;
+            }
+            
+            // Asegurar que los campos requeridos estén presentes
+            $userData['user_id'] = $userData['user_id'] ?? $id;
+            $userData['user_status'] = $userData['user_status'] ?? true;
+            
+            // Convertir a objeto User y luego a array para asegurar consistencia
+            return User::fromArray($userData)->toArray();
+            
+        } catch (\Exception $e) {
+            if (defined('APP_DEBUG') && APP_DEBUG) {
+                error_log('Error in SupabaseUserRepository->findById(): ' . $e->getMessage());
+            }
+            throw $e;
+        }
     }
     
-    // Update elapsed times every second
-    setInterval(updateElapsedTimes, 1000);
+    public function create(array $data): array
+    {
+        try {
+            $response = $this->client->request(
+                'rest/v1/users',
+                'POST',
+                $data,
+                null,
+                ['Prefer' => 'return=representation']
+            );
+            
+            if (empty($response['data'])) {
+                throw new \Exception('No se pudo crear el usuario');
+            }
+            
+            return $response['data'][0];
+            
+        } catch (\Exception $e) {
+            if (defined('APP_DEBUG') && APP_DEBUG) {
+                error_log('Error in SupabaseUserRepository->create(): ' . $e->getMessage());
+            }
+            throw $e;
+        }
+    }
     
-    // Initial update
-    updateElapsedTimes();
+    public function update(string $id, array $data): array
+    {
+        try {
+            $response = $this->client->request(
+                'rest/v1/users',
+                'PATCH',
+                $data,
+                'user_id=eq.' . $id,
+                ['Prefer' => 'return=representation']
+            );
+            
+            if (empty($response['data'])) {
+                throw new \Exception('No se pudo actualizar el usuario');
+            }
+            
+            return $response['data'][0];
+            
+        } catch (\Exception $e) {
+            if (defined('APP_DEBUG') && APP_DEBUG) {
+                error_log('Error in SupabaseUserRepository->update(): ' . $e->getMessage());
+            }
+            throw $e;
+        }
+    }
     
-    // Close modal when clicking outside the content
-    window.onclick = function(event) {
-      const modal = document.getElementById('pauses-modal');
-      if (event.target === modal) {
-        closeModal();
-      }
-    };
-  </script>
-  <script>
-    feather.replace();
-  </script>
-</body>
-</html>
+    /**
+     * Eliminar un usuario por su ID
+     * 
+     * @param string $id ID del usuario a eliminar
+     * @return bool True si se eliminó correctamente, false si no se encontró el usuario
+     * @throws \Exception Si ocurre un error al intentar eliminar
+     */
+    public function delete(string $id): bool
+    {
+        try {
+            // No necesitamos verificar si el usuario existe primero
+            // porque Supabase devuelve éxito (204) incluso si el usuario no existe
+            
+            // Realizar la eliminación
+            $response = $this->client->request(
+                'rest/v1/users',
+                'DELETE',
+                null,
+                'user_id=eq.' . $id . '&select=user_id'  // Solo pedimos el ID para minimizar la respuesta
+            );
+            
+            // En Supabase, una eliminación exitosa devuelve 204 No Content
+            // Incluso si el usuario no existía, devuelve 204
+            // También verificamos si la respuesta es un array vacío (puede variar según la versión de Supabase)
+            return $response['status'] === 204 || empty($response['data']);
+            
+        } catch (\Exception $e) {
+            $errorMsg = 'Error al eliminar el usuario: ' . $e->getMessage();
+            if (defined('APP_DEBUG') && APP_DEBUG) {
+                error_log('Error in SupabaseUserRepository->delete(): ' . $errorMsg);
+            }
+            throw new \Exception($errorMsg, 0, $e);
+        }
+    }
+    
+    public function isEmailInUse(string $email, ?string $excludeUserId = null): bool
+    {
+        try {
+            $query = 'user_email=eq.' . urlencode($email) . '&select=user_id';
+            if ($excludeUserId) {
+                $query .= '&user_id=neq.' . urlencode($excludeUserId);
+            }
+            
+            $response = $this->client->request(
+                'rest/v1/users',
+                'GET',
+                null,
+                $query
+            );
+            
+            // Verificar si hay algún usuario con ese email
+            return !empty($response['data']);
+            
+        } catch (\Exception $e) {
+            if (defined('APP_DEBUG') && APP_DEBUG) {
+                error_log('Error in SupabaseUserRepository->isEmailInUse(): ' . $e->getMessage());
+            }
+            return false;
+        }
+    }
+    
+    public function isUserInUse(string $userName, ?string $excludeUserId = null): bool
+    {
+        try {
+            $query = 'user_name=eq.' . urlencode($userName) . '&select=user_id';
+            if ($excludeUserId) {
+                $query .= '&user_id=neq.' . urlencode($excludeUserId);
+            }
+            
+            $response = $this->client->request(
+                'rest/v1/users',
+                'GET',
+                null,
+                $query
+            );
+            
+            // Verificar si hay algún usuario con ese ID
+            return !empty($response['data']);
+            
+        } catch (\Exception $e) {
+            if (defined('APP_DEBUG') && APP_DEBUG) {
+                error_log('Error in SupabaseUserRepository->isUserInUse(): ' . $e->getMessage());
+            }
+            return false;
+        }
+    }
+
+    /**
+     * Obtener todos los roles disponibles
+     * 
+     * @return array Array de objetos Role
+     * @throws \Exception Si ocurre un error al obtener los roles
+     */
+    public function getAllRoles(): array
+    {
+        try {
+            $response = $this->client->request(
+                'rest/v1/roles',
+                'GET',
+                null,
+                'select=*&order=role_name.asc'
+            );
+            
+            if (empty($response['data'])) {
+                return [];
+            }
+            
+            return array_map(function($roleData) {
+                $role = is_object($roleData) ? (array) $roleData : $roleData;
+                
+                // Asegurar que los campos requeridos estén presentes
+                $roleData = [
+                    'role_id' => $role['role_id'] ?? null,
+                    'role_name' => $role['role_name'] ?? 'Sin nombre',
+                    'created_at' => $role['created_at'] ?? null,
+                    'updated_at' => $role['updated_at'] ?? null
+                ];
+                
+                // Convertir a objeto Role y luego a array para mantener consistencia
+                return Role::fromArray($roleData)->toArray();
+                
+            }, $response['data']);
+            
+        } catch (\Exception $e) {
+            $errorMsg = 'Error al obtener los roles: ' . $e->getMessage();
+            if (defined('APP_DEBUG') && APP_DEBUG) {
+                error_log('Error in SupabaseUserRepository->getAllRoles(): ' . $errorMsg);
+            }
+            throw new \Exception($errorMsg, 0, $e);
+        }
+    }
+}

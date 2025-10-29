@@ -16,7 +16,7 @@ class CustomFetch {
             this.options = this._prepareOptions(options);
 
             const response = await fetch(this.endPoint, this.options);
-            
+            console.log(response);
             if (!response.ok) {
                 const errorBody = await response.json().catch(() => ({}));
                 throw {

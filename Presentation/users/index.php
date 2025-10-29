@@ -143,7 +143,7 @@
         /**
          * import all functions from users.js
          */
-        import {  httpGetPaginatedUsers, httpGetUser, httpDeleteUser, httpGetRoles, removeRow, httpOpenSidebar } from '../Assets/js/utils/users.js';
+        import {  httpGetPaginatedUsers, httpGetUser, httpDeleteUser, httpGetRoles, removeRow, httpOpenSidebar } from './Assets/js/utils/users.js';
        
 
         document.addEventListener('DOMContentLoaded', async () => {
